@@ -34,20 +34,59 @@ void add_history(char *unused) {}
 
 #endif
 
+long eval_op(long x, char *op, long y)
+{
+	switch (*op) {
+	case '+':
+		return x + y;
+	case '-':
+		return x - y;
+	case '*':
+		return x * y;
+	case '/':
+		return x / y;
+	case '%':
+		return x % y;
+	default:
+		printf("ERROR:  unrecognized operator:  %c", *op);
+		return 0;
+	}
+}
+
+long eval(mpc_ast_t * ast)
+{
+	/* If it's tagged as a number, parse out a long and return it */
+	/* TODO(jfriedly):  Support floats! */
+	if (strstr(ast->tag, "number"))
+		return atoi(ast->contents);
+	
+	/* The operator is always the second child */
+	char * op = ast->children[1]->contents;
+
+	/* Recursively call eval on the third child */
+	long x = eval(ast->children[2]);
+	
+	/* Iterate over the remaining children, combining with the operator */
+	int i = 3;
+	while (strstr(ast->children[i]->tag, "expr")) {
+		x = eval_op(x, op, eval(ast->children[i]));
+		i++;
+	}
+
+	return x;
+}
+
 /* Attempt to parse the user input */
-mpc_result_t parse(mpc_parser_t *parser, char *input)
+mpc_ast_t *parse(mpc_parser_t *parser, char *input)
 {
 	mpc_result_t r;
-	if (mpc_parse("<stdin>", input, parser, &r)) {
-		/* Success:  print the AST */
-		mpc_ast_print(r.output);
-		mpc_ast_delete(r.output);
-	} else {
+	if (!mpc_parse("<stdin>", input, parser, &r)) {
 		/* Failure:  print the error */
 		mpc_err_print(r.error);
 		mpc_err_delete(r.error);
+		return NULL;
 	}
-	return r;
+	return r.output;
 }
 
 int main(int argc, char **argv)
@@ -73,10 +112,13 @@ int main(int argc, char **argv)
 
 	while (1) {
 		char *input = readline("my-lisp> ");
-
 		add_history(input);
 
-		parse(MyLisp, input);
+		mpc_ast_t *ast = parse(MyLisp, input);
+		if (ast != NULL) {
+			printf("%ld\n", eval(ast));
+			mpc_ast_delete(ast);
+		}
 
 		free(input);
 	}
