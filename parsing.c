@@ -53,6 +53,7 @@ mpc_result_t parse(mpc_parser_t *parser, char *input)
 int main(int argc, char **argv)
 {
 	/* Create some mpc parsers */
+	mpc_parser_t *Digits   = mpc_new("digits");
 	mpc_parser_t *Number   = mpc_new("number");
 	mpc_parser_t *Operator = mpc_new("operator");
 	mpc_parser_t *Expr     = mpc_new("expr");
@@ -60,11 +61,12 @@ int main(int argc, char **argv)
 	/* Define the parsers with the followning language */
 	mpca_lang(MPCA_LANG_DEFAULT,
 		"							\
-		number   : /-?[0-9]+/ ;					\
-		operator : '+' | '-' | '*' | '/' ;			\
-		expr     : <number> | '(' <operator> <expr>+ ')' ;	\
-		mylisp  : /^/ <operator> <expr>+ /$/ ;",
-		Number, Operator, Expr, MyLisp);
+		digits   : /-?[0-9]+/ ;					\
+		number   : <digits> '.' <digits> | <digits> ;		\
+		operator : '+' | '-' | '*' | '/' | '%' ;		\
+		expr     : '(' <operator> <expr>+ ')' | <number> ;	\
+		mylisp   : /^/ <operator> <expr>+ /$/ ;",
+		Digits, Number, Operator, Expr, MyLisp);
 
 	puts("My-lisp Version 0.0.0.0.1");
 	puts("Press Ctrl+C to exit\n");
@@ -80,6 +82,6 @@ int main(int argc, char **argv)
 	}
 
 	/* Undefine and delete our parsers */
-	mpc_cleanup(4, Number, Operator, Expr, MyLisp);
+	mpc_cleanup(5, Digits, Number, Operator, Expr, MyLisp);
 	return 0;
 }
