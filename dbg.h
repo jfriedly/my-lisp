@@ -8,10 +8,9 @@
 #include <stdio.h>
 #include <string.h>
 
-
 #define clean_errno() (errno == 0 ? "None" : strerror(errno))
 
-
+#define DEBUG 0
 #if DEBUG
 /* ##__VA_ARGS__ tells the preprocessor to substitute in the extra arguments
  * ("...")
@@ -27,12 +26,9 @@
 #define debug(M, ...)
 #endif
 
-
 #define log_info(M, ...) fprintf(stderr, "[INFO] (%s:%d) " M "\n", __FILE__, __LINE__, ##__VA_ARGS__)
 
-
 #define log_warn(M, ...) fprintf(stderr, "[WARN] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
-
 
 #define log_err(M, ...) fprintf(stderr, "[ERROR] (%s:%d: errno: %s) " M "\n", __FILE__, __LINE__, clean_errno(), ##__VA_ARGS__)
 /* Use check to check  a condition, log, and cleans up if the condition is
@@ -52,6 +48,5 @@
  *     check_mem(block);
  */
 #define check_mem(A) check((A), "Out of memory.")
-
 
 #endif

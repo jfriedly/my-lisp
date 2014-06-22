@@ -1,12 +1,11 @@
 #include <errno.h>
-#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 
-#include "mpc.h"
-
-#define DEBUG 0
 #include "dbg.h"
+
+#include "mpc.h"
+#include "eval.h"
 
 /* If we are compiling on Windws, compile these functions */
 #ifdef _WIN32
@@ -39,61 +38,6 @@ void add_history(char *unused) {}
 
 #endif
 
-long eval_op(long x, char *op, long y)
-{
-	if (strcmp(op, "+") == 0)
-		return x + y;
-	else if (strcmp(op, "-") == 0)
-		return x - y;
-	else if (strcmp(op, "*") == 0)
-		return x * y;
-	else if (strcmp(op, "/") == 0)
-		return x / y;
-	else if (strcmp(op, "%") == 0)
-		return x % y;
-	else if (strcmp(op, "^") == 0)
-		return pow(x, y);
-	else if (strcmp(op, "min") == 0)
-		return fmin(x, y);
-	else if (strcmp(op, "max") == 0)
-		return fmax(x, y);
-	else
-		sentinel("ERROR:  unrecognized operator:  '%c'", *op);
-
-error:
-	return 0;
-}
-
-long eval(mpc_ast_t *ast)
-{
-	/* If it's tagged as a number, parse out a long and return it */
-	/* TODO(jfriedly):  Support floats! */
-	if (strstr(ast->tag, "number"))
-		return atoi(ast->contents);
-	
-	/* The operator is always the second child */
-	char * op = ast->children[1]->contents;
-
-	/* Recursively call eval on the third child */
-	long x = eval(ast->children[2]);
-	
-	/* Iterate over the remaining children, combining with the operator */
-	int i = 3;
-	while (strstr(ast->children[i]->tag, "expr")) {
-		x = eval_op(x, op, eval(ast->children[i]));
-		i++;
-	}
-
-	return x;
-}
-
-long eval_line(mpc_ast_t *ast)
-{
-	/* Ignore the regexes ^ and $ */
-	mpc_ast_t *expr = ast->children[1];
-	return eval(expr);
-}
-
 /* Attempt to parse the user input */
 mpc_ast_t *parse(mpc_parser_t *parser, char *input)
 {
@@ -112,7 +56,6 @@ mpc_ast_t *parse(mpc_parser_t *parser, char *input)
 int main(int argc, char **argv)
 {
 	/* Create some mpc parsers */
-	mpc_parser_t *Digits   = mpc_new("digits");
 	mpc_parser_t *Number   = mpc_new("number");
 	mpc_parser_t *Operator = mpc_new("operator");
 	mpc_parser_t *Expr     = mpc_new("expr");
@@ -120,12 +63,11 @@ int main(int argc, char **argv)
 	/* Define the parsers with the followning language */
 	mpca_lang(MPCA_LANG_DEFAULT,
 		"										\
-		digits   : /-?[0-9]+/ ;								\
-		number   : <digits> '.' <digits> | <digits> ;					\
+		number   : /-?[0-9.]+/ ;							\
 		operator : '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;		\
 		expr     : '(' <operator> <expr>+ ')' | <number> ;				\
 		mylisp   : /^/ <expr> /$/ ;",
-		Digits, Number, Operator, Expr, MyLisp);
+		Number, Operator, Expr, MyLisp);
 
 	puts("My-lisp Version 0.0.0.0.1");
 	puts("Press Ctrl+C to exit\n");
@@ -140,7 +82,7 @@ int main(int argc, char **argv)
 
 		mpc_ast_t *ast = parse(MyLisp, input);
 		if (ast != NULL) {
-			printf("%ld\n", eval_line(ast));
+			lval_print(eval_line(ast));
 			mpc_ast_delete(ast);
 		}
 
@@ -148,6 +90,6 @@ int main(int argc, char **argv)
 	}
 
 	/* Undefine and delete our parsers */
-	mpc_cleanup(5, Digits, Number, Operator, Expr, MyLisp);
+	mpc_cleanup(4, Number, Operator, Expr, MyLisp);
 	return 0;
 }
