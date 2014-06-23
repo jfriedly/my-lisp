@@ -6,6 +6,7 @@
 
 #include "mpc.h"
 #include "eval.h"
+#include "lval.h"
 
 /* If we are compiling on Windws, compile these functions */
 #ifdef _WIN32
@@ -57,17 +58,23 @@ int main(int argc, char **argv)
 {
 	/* Create some mpc parsers */
 	mpc_parser_t *Number   = mpc_new("number");
-	mpc_parser_t *Operator = mpc_new("operator");
+	mpc_parser_t *Symbol   = mpc_new("symbol");
 	mpc_parser_t *Expr     = mpc_new("expr");
+	mpc_parser_t *SExpr     = mpc_new("sexpr");
 	mpc_parser_t *MyLisp   = mpc_new("mylisp");
-	/* Define the parsers with the followning language */
+	/* Define the parsers with the followning language
+	 *
+	 * TODO(jfriedly):  Implement concepts of unary, binary, etc. symbols.
+	 * For example, (/ 1) should be a syntax error.
+	 */
 	mpca_lang(MPCA_LANG_DEFAULT,
 		"										\
 		number   : /-?[0-9.]+/ ;							\
-		operator : '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;		\
-		expr     : '(' <operator> <expr>+ ')' | <number> ;				\
-		mylisp   : /^/ <expr> /$/ ;",
-		Number, Operator, Expr, MyLisp);
+		symbol   : '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;		\
+		expr     : <number> | <symbol> | <sexpr> ;					\
+		sexpr    : '(' <expr>* ')' ;							\
+		mylisp   : /^/ <sexpr> /$/ ;",
+		Number, Symbol, Expr, SExpr, MyLisp);
 
 	puts("My-lisp Version 0.0.0.0.1");
 	puts("Press Ctrl+C to exit\n");
@@ -82,7 +89,9 @@ int main(int argc, char **argv)
 
 		mpc_ast_t *ast = parse(MyLisp, input);
 		if (ast != NULL) {
-			lval_print(eval_line(ast));
+			struct lval *x = lval_eval(lval_read(ast));
+			lval_println(x);
+			lval_del(x);
 			mpc_ast_delete(ast);
 		}
 
@@ -90,6 +99,6 @@ int main(int argc, char **argv)
 	}
 
 	/* Undefine and delete our parsers */
-	mpc_cleanup(4, Number, Operator, Expr, MyLisp);
+	mpc_cleanup(5, Number, Symbol, Expr, SExpr, MyLisp);
 	return 0;
 }

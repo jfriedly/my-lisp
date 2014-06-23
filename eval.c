@@ -6,234 +6,214 @@
 
 #include "mpc.h"
 #include "eval.h"
+#include "lval.h"
 
-struct lval lval_long(long x)
+struct lval *lval_add(struct lval *x, struct lval *y)
 {
-	struct lval v;
-	v.type = LVAL_LONG;
-	union lval_value val;
-	val.num_long = x;
-	v.val = val;
-	return v;
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(x->val.num_long + y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_long + y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(x->val.num_double + y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_double + y->val.num_double);
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_double(double x)
+struct lval *lval_sub(struct lval *x, struct lval *y)
 {
-	struct lval v;
-	v.type = LVAL_DOUBLE;
-	union lval_value val;
-	val.num_double = x;
-	v.val = val;
-	return v;
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(x->val.num_long - y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_long - y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(x->val.num_double - y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_double - y->val.num_double);
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_err(short x)
+struct lval *lval_mul(struct lval *x, struct lval *y)
 {
-	struct lval v;
-	v.type = LVAL_ERR;
-	union lval_value val;
-	val.err_short = x;
-	v.val = val;
-	return v;
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(x->val.num_long * y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_long * y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(x->val.num_double * y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(x->val.num_double * y->val.num_double);
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_add(struct lval x, struct lval y)
+struct lval *lval_div(struct lval *x, struct lval *y)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(x.val.num_long + y.val.num_long);
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_long + y.val.num_double);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(x.val.num_double + y.val.num_long);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_double + y.val.num_double);
-	return lval_err(LERR_BAD_NUM);
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return y->val.num_long == 0 ? lval_err("Division by zero") : lval_long(x->val.num_long / y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return y->val.num_double == 0.0 ? lval_err("Division by zero") : lval_double(x->val.num_long / y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return y->val.num_long == 0 ? lval_err("Division by zero") : lval_double(x->val.num_double / y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return y->val.num_double == 0 ? lval_err("Division by zero") : lval_double(x->val.num_double / y->val.num_double);
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_sub(struct lval x, struct lval y)
+struct lval *lval_mod(struct lval *x, struct lval *y)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(x.val.num_long - y.val.num_long);
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_long - y.val.num_double);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(x.val.num_double - y.val.num_long);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_double - y.val.num_double);
-	return lval_err(LERR_BAD_NUM);
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(x->val.num_long % y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(fmod(x->val.num_long, y->val.num_double));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(fmod(x->val.num_double, y->val.num_long));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(fmod(x->val.num_double, y->val.num_double));
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_mul(struct lval x, struct lval y)
+struct lval *lval_pow(struct lval *x, struct lval *y)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(x.val.num_long * y.val.num_long);
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_long * y.val.num_double);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(x.val.num_double * y.val.num_long);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(x.val.num_double * y.val.num_double);
-	return lval_err(LERR_BAD_NUM);
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(pow(x->val.num_long, y->val.num_long));
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(pow(x->val.num_long, y->val.num_double));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(pow(x->val.num_double, y->val.num_long));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(pow(x->val.num_double, y->val.num_double));
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_div(struct lval x, struct lval y)
+struct lval *lval_max(struct lval *x, struct lval *y)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return y.val.num_long == 0 ? lval_err(LERR_DIV_ZERO) : lval_long(x.val.num_long / y.val.num_long);
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return y.val.num_double == 0.0 ? lval_err(LERR_DIV_ZERO) : lval_double(x.val.num_long / y.val.num_double);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return y.val.num_long == 0 ? lval_err(LERR_DIV_ZERO) : lval_double(x.val.num_double / y.val.num_long);
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return y.val.num_double == 0 ? lval_err(LERR_DIV_ZERO) : lval_double(x.val.num_double / y.val.num_double);
-	return lval_err(LERR_BAD_NUM);
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(fmax(x->val.num_long, y->val.num_long));
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(fmax(x->val.num_long, y->val.num_double));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(fmax(x->val.num_double, y->val.num_long));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(fmax(x->val.num_double, y->val.num_double));
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_mod(struct lval x, struct lval y)
+struct lval *lval_min(struct lval *x, struct lval *y)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(x.val.num_long % y.val.num_long);
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(fmod(x.val.num_long, y.val.num_double));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(fmod(x.val.num_double, y.val.num_long));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(fmod(x.val.num_double, y.val.num_double));
-	return lval_err(LERR_BAD_NUM);
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_long(fmin(x->val.num_long, y->val.num_long));
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_double(fmin(x->val.num_long, y->val.num_double));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_double(fmin(x->val.num_double, y->val.num_long));
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_double(fmin(x->val.num_double, y->val.num_double));
+	return lval_err("Invalid number types");
 }
 
-struct lval lval_pow(struct lval x, struct lval y)
+struct lval *eval_op(char *op, struct lval *numbers)
 {
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(pow(x.val.num_long, y.val.num_long));
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(pow(x.val.num_long, y.val.num_double));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(pow(x.val.num_double, y.val.num_long));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(pow(x.val.num_double, y.val.num_double));
-	return lval_err(LERR_BAD_NUM);
-}
-
-struct lval lval_max(struct lval x, struct lval y)
-{
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(fmax(x.val.num_long, y.val.num_long));
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(fmax(x.val.num_long, y.val.num_double));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(fmax(x.val.num_double, y.val.num_long));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(fmax(x.val.num_double, y.val.num_double));
-	return lval_err(LERR_BAD_NUM);
-}
-
-struct lval lval_min(struct lval x, struct lval y)
-{
-	if (x.type == LVAL_LONG && y.type == LVAL_LONG)
-		return lval_long(fmin(x.val.num_long, y.val.num_long));
-	if (x.type == LVAL_LONG && y.type == LVAL_DOUBLE)
-		return lval_double(fmin(x.val.num_long, y.val.num_double));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_LONG)
-		return lval_double(fmin(x.val.num_double, y.val.num_long));
-	if (x.type == LVAL_DOUBLE && y.type == LVAL_DOUBLE)
-		return lval_double(fmin(x.val.num_double, y.val.num_double));
-	return lval_err(LERR_BAD_NUM);
-}
-
-void lval_print(struct lval v)
-{
-	switch (v.type) {
-	case LVAL_LONG:
-		printf("%ld\n", v.val.num_long);
-		break;
-	case LVAL_DOUBLE:
-		printf("%f\n", v.val.num_double);
-		break;
-	case LVAL_ERR:
-		if (v.val.err_short == LERR_DIV_ZERO)
-			log_err("Division by zero");
-		else if (v.val.err_short == LERR_BAD_OP)
-			log_err("Invalid operator");
-		else if (v.val.err_short == LERR_BAD_NUM) {
-			log_err("Invalid number");
-			errno = 0;
-		} else
-			log_err("Unrecognized error %d", v.val.err_short);
-		break;
-	default:
-		log_err("Unrecognized lval type %d", v.type);
+	/* Ensure all arguments are numbers */
+	for (int i = 0; i < numbers->count; i++) {
+		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
+			lval_del(numbers);
+			log_err("Attempted to evaluate operator %s on lval with type %d",
+				op, numbers->cell[i]->type);
+			return lval_err("Cannot evaluate operator on non-numbers");
+		}
 	}
-}
 
-struct lval eval_op(char *op, struct lval x, struct lval y)
-{
-	if (x.type == LVAL_ERR)
-		return x;
-	else if (y.type == LVAL_ERR)
-		return y;
+	/*
+	 * Pop the first number; it becomes our accumulator.  There will
+	 * be at least one number because lval_eval_sexpr guarantees that
+	 * for us.
+	 *
+	 * If there is only one number, we'll return that number unchanged.
+	 */
+	struct lval *acc = lval_pop(numbers, 0);
 
-	if (strcmp(op, "+") == 0)
-		return lval_add(x, y);
-	else if (strcmp(op, "-") == 0)
-	      return lval_sub(x, y);
-	else if (strcmp(op, "*") == 0)
-	      return lval_mul(x, y);
-	else if (strcmp(op, "/") == 0)
-	      return lval_div(x, y);
-	else if (strcmp(op, "%") == 0)
-	      return lval_mod(x, y);
-	else if (strcmp(op, "^") == 0)
-	      return lval_pow(x, y);
-	else if (strcmp(op, "max") == 0)
-		return lval_max(x, y);
-	else if (strcmp(op, "min") == 0)
-		return lval_min(x, y);
-	else
-		sentinel("Unrecognized operator:  '%c'", *op);
+	/* While there are still elements remaining */
+	while (numbers->count > 0) {
+		struct lval *y = lval_pop(numbers, 0);
+		if (strcmp(op, "+") == 0)
+			acc = lval_add(acc, y);
+		else if (strcmp(op, "-") == 0)
+			acc = lval_sub(acc, y);
+		else if (strcmp(op, "*") == 0)
+			acc = lval_mul(acc, y);
+		else if (strcmp(op, "/") == 0)
+			acc = lval_div(acc, y);
+		else if (strcmp(op, "%") == 0)
+			acc = lval_mod(acc, y);
+		else if (strcmp(op, "^") == 0)
+			acc = lval_pow(acc, y);
+		else if (strcmp(op, "max") == 0)
+			acc = lval_max(acc, y);
+		else if (strcmp(op, "min") == 0)
+			acc = lval_min(acc, y);
+		else
+			sentinel("Unrecognized operator:  '%c'", *op);
+
+		lval_del(y);
+
+		if (acc->type == LVAL_ERR)
+			break;
+	}
+
+	lval_del(numbers);
+	return acc;
 
 error:
 	debug("Returning error from eval_op");
-	return lval_err(LERR_BAD_OP);
+	return lval_err("Unrecognized operator");
 }
 
-struct lval eval(mpc_ast_t *ast)
+/* Forward declare lval_eval */
+struct lval *lval_eval(struct lval *expr);
+
+struct lval *lval_eval_sexpr(struct lval *sexpr)
 {
-	debug("Entering eval, tag is %s", ast->tag);
+	/* Recursively evaluate children */
+	for (int i = 0; i < sexpr->count; i++)
+		sexpr->cell[i] = lval_eval(sexpr->cell[i]);
 
-	if (strstr(ast->tag, "number")) {
-		debug("Parsing a number: %s", ast->contents);
-		errno = 0;
-		if (strstr(ast->contents, ".")) {
-			double x = strtof(ast->contents, NULL);
-			debug("Float parsed as %f", x);
-			return lval_double(x);
-		} else {
-			long x = strtol(ast->contents, NULL, 10);
-			return errno != ERANGE ? lval_long(x) : lval_err(LERR_BAD_NUM);
-		}
-	}
-	
-	/* The operator is always the second child */
-	char * op = ast->children[1]->contents;
-
-	/* Recursively call eval on the third child */
-	struct lval x = eval(ast->children[2]);
-	
-	/* Iterate over the remaining children, combining with the operator */
-	int i = 3;
-	while (strstr(ast->children[i]->tag, "expr")) {
-		x = eval_op(op, x, eval(ast->children[i]));
-		i++;
+	/* Error handling */
+	for (int i = 0; i < sexpr->count; i++) {
+		if (sexpr->cell[i]->type == LVAL_ERR)
+			return lval_take(sexpr, i);
 	}
 
-	return x;
+	/* nil */
+	if (sexpr->count == 0)
+		return sexpr;
+
+	/* literal */
+	if (sexpr->count == 1)
+		return lval_take(sexpr, 0);
+
+	/*
+	 * Otherwise, we have an expression with multiple elements.
+	 * Ensure the first element is a symbol.
+	 */
+	struct lval *car = lval_pop(sexpr, 0);
+	if (car->type != LVAL_SYM) {
+		lval_del(car);
+		lval_del(sexpr);
+		return lval_err("S-expression does not start with a symbol");
+	}
+
+	struct lval *result = eval_op(car->val.sym, sexpr);
+	lval_del(car);
+	return result;
 }
 
-struct lval eval_line(mpc_ast_t *ast)
+struct lval *lval_eval(struct lval *expr)
 {
-	/* Ignore the regexes ^ and $ */
-	mpc_ast_t *expr = ast->children[1];
-	return eval(expr);
+	/* Evaluate S-expressions */
+	if (expr->type == LVAL_SEXPR)
+		return lval_eval_sexpr(expr);
+	/* All other lval types remain the same */
+	return expr;
 }
 
