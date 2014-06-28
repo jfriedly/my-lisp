@@ -10,9 +10,7 @@ struct lval *lval_long(long x)
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_LONG;
-	union atom val;
-	val.num_long = x;
-	v->val = val;
+	v->val.num_long = x;
 	return v;
 }
 
@@ -20,9 +18,7 @@ struct lval *lval_double(double x)
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_DOUBLE;
-	union atom val;
-	val.num_double = x;
-	v->val = val;
+	v->val.num_double = x;
 	return v;
 }
 
@@ -30,10 +26,8 @@ struct lval *lval_err(char *m)
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_ERR;
-	union atom val;
-	val.err = malloc(strlen(m) + 1);
-	strcpy(val.err, m);
-	v->val = val;
+	v->val.err = malloc(strlen(m) + 1);
+	strcpy(v->val.err, m);
 	return v;
 }
 
@@ -41,10 +35,8 @@ struct lval *lval_sym(char *s)
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_SYM;
-	union atom val;
-	val.sym = malloc(strlen(s) + 1);
-	strcpy(val.sym, s);
-	v->val = val;
+	v->val.sym = malloc(strlen(s) + 1);
+	strcpy(v->val.sym, s);
 	return v;
 }
 

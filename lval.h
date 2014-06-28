@@ -1,20 +1,17 @@
 #ifndef lval_h
 #define lval_h
 
-/* Lisp atom union */
-union atom {
-    long num_long;
-    double num_double;
-    char *err;
-    char *sym;
-};
-
 /* Lisp value (or error) */
 /* TODO(jfriedly):  S-expressions should use the union val. */
 /* TODO(jfriedly):  Use cons cells instead of an array of lvals. */
 struct lval {
 	short type;
-    union atom val;
+    union {
+        long num_long;
+        double num_double;
+        char *err;
+        char *sym;
+    } val ;
     int count;
     struct lval **cell;
 };
