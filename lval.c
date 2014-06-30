@@ -57,6 +57,15 @@ struct lval *lval_append(struct lval *head, struct lval *tail)
 	return head;
 }
 
+struct lval *lval_join(struct lval *head, struct lval *tail)
+{
+	/* For each cell in the tail, append it onto the end of the head */
+	while (tail->count)
+		head = lval_append(head, lval_pop(tail, 0));
+	lval_del(tail);
+	return head;
+}
+
 struct lval *lval_pop(struct lval *sexpr, int i)
 {
 	/* Find the child at index i */
@@ -173,38 +182,37 @@ void lval_del(struct lval *v)
 }
 
 /* Forward declare lval_print */
-void lval_print(struct lval *v);
+void lval_print(FILE *stream, struct lval *v);
 
-void lval_expr_print(struct lval *v, char open, char close)
+void lval_expr_print(FILE *stream, struct lval *v, char open, char close)
 {
-	debug("Calling lval_expr_print");
-	putchar(open);
+	putc(open, stream);
 	for (int i = 0; i < v->count; i++) {
-		lval_print(v->cell[i]);
+		lval_print(stream, v->cell[i]);
 		/* Don't print trailing space if last element */
 		if (i != (v->count-1))
-			putchar(' ');
+			putc(' ', stream);
 	}
-	putchar(close);
+	putc(close, stream);
 }
 
-void lval_print(struct lval *v)
+void lval_print(FILE *stream, struct lval *v)
 {
 	switch (v->type) {
 	case LVAL_LONG:
-		printf("%ld", v->val.num_long);
+		fprintf(stream, "%ld", v->val.num_long);
 		break;
 	case LVAL_DOUBLE:
-		printf("%f", v->val.num_double);
+		fprintf(stream, "%f", v->val.num_double);
 		break;
 	case LVAL_ERR:
-		printf("Runtime Error: %s", v->val.err);
+		fprintf(stream, "Runtime Error: %s", v->val.err);
 		break;
 	case LVAL_SYM:
-		printf("%s", v->val.sym);
+		fprintf(stream, "%s", v->val.sym);
 		break;
 	case LVAL_SEXPR:
-		lval_expr_print(v, '(', ')');
+		lval_expr_print(stream, v, '(', ')');
 		break;
 	default:
 		log_err("Attempted to print an unrecognized lval type %d",
@@ -212,9 +220,16 @@ void lval_print(struct lval *v)
 	}
 }
 
-void lval_println(struct lval *v)
+void lval_println(FILE *stream, struct lval *v)
 {
-	debug("Calling lval_println");
-	lval_print(v);
-	putchar('\n');
+	lval_print(stream, v);
+	putc('\n', stream);
+}
+
+void lval_debug(struct lval *v)
+{
+	if (DEBUG) {
+		fprintf(stderr, "DEBUG %s:%d: ", __FILE__, __LINE__);
+		lval_println(stderr, v);
+	}
 }

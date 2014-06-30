@@ -68,11 +68,12 @@ int main(int argc, char **argv)
 	 * For example, (/ 1) should be a syntax error.
 	 */
 	mpca_lang(MPCA_LANG_DEFAULT,
-		"										\
-		number   : /-?[0-9.]+/ ;							\
-		symbol   : '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;		\
-		expr     : <number> | <symbol> | <sexpr> ;					\
-		sexpr    : '(' <expr>* ')' ;							\
+		"												\
+		number   : /-?[0-9.]+/ ;									\
+		symbol   : \"car\" | \"cdr\" | \"list\" | \"join\" | \"eval\" | \"quote\" | 			\
+			   '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;				\
+		expr     : <number> | <symbol> | <sexpr> ;							\
+		sexpr    : '(' <expr>* ')' ;									\
 		mylisp   : /^/ <sexpr> /$/ ;",
 		Number, Symbol, Expr, SExpr, MyLisp);
 
@@ -89,9 +90,9 @@ int main(int argc, char **argv)
 
 		mpc_ast_t *ast = parse(MyLisp, input);
 		if (ast != NULL) {
-			struct lval *x = lval_eval(lval_read(ast));
-			lval_println(x);
-			lval_del(x);
+			struct lval *v = lval_eval(lval_read(ast));
+			lval_println(stdout, v);
+			lval_del(v);
 			mpc_ast_delete(ast);
 		}
 

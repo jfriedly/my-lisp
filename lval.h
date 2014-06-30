@@ -1,6 +1,8 @@
 #ifndef lval_h
 #define lval_h
 
+#include "mpc.h"
+
 /* Lisp value (or error) */
 /* TODO(jfriedly):  S-expressions should use the union val. */
 /* TODO(jfriedly):  Use cons cells instead of an array of lvals. */
@@ -38,6 +40,9 @@ void lval_del(struct lval *v);
 /* Use lval_append to put multiple lvals into a single S-expression */
 struct lval *lval_append(struct lval *head, struct lval *tail);
 
+/* Use lval_join to join two S-expressions together */
+struct lval *lval_join(struct lval *head, struct lval *tail);
+
 /*
  * Use lval_pop to "pop" an lval out of an S-expression.  The lval is
  * removed from the S-expression and returned, and all lvals after it in the
@@ -58,8 +63,9 @@ struct lval *lval_read_num(mpc_ast_t *ast);
 struct lval *lval_read(mpc_ast_t *ast);
 
 /* Functions for printing lvals */
-void lval_expr_print(struct lval *v, char open, char close);
-void lval_print(struct lval *v);
-void lval_println(struct lval *v);
+void lval_expr_print(FILE *stream, struct lval *v, char open, char close);
+void lval_print(FILE *stream, struct lval *v);
+void lval_println(FILE *stream, struct lval *v);
+void lval_debug(struct lval *v);
 
 #endif

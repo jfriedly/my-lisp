@@ -3,18 +3,44 @@
 
 #include "lval.h"
 
-/* operations on lvals */
-struct lval *lval_add(struct lval *x, struct lval *y);
-struct lval *lval_sub(struct lval *x, struct lval *y);
-struct lval *lval_mul(struct lval *x, struct lval *y);
-struct lval *lval_div(struct lval *x, struct lval *y);
-struct lval *lval_mod(struct lval *x, struct lval *y);
-struct lval *lval_pow(struct lval *x, struct lval *y);
-struct lval *lval_max(struct lval *x, struct lval *y);
-struct lval *lval_min(struct lval *x, struct lval *y);
-
 /* evaluate a parsed operator on two parsed numbers */
-struct lval *eval_op(char *op, struct lval *numbers);
+struct lval *buildin_op(char *op, struct lval *numbers);
+
+/*
+ * C functions that implement Lisp primitives
+ *
+ * The arguments here get a bit tricky.  eval will call builtin, which
+ * calls builtin_*.  The S-expression passed to builtin_* is the entire
+ * outer expression, but with the symbol lval popped out.  Examples:
+ *
+ * (car (quote (+ 1 2)))
+ *  -> builtin("car", <sexpr: ((+ 1 2))>)
+ *   -> builtin_car(<sexpr: ((+ 1 2))>)
+ *    -> returns <sym: +>
+ *
+ * (list (1 2) 3)
+ *  -> builtin("list", <sexpr: ((1 2) 3)>)
+ *   -> builtin_list(<sexpr: ((1 2) 3)>)
+ *    -> returns <sexpr: ((1 2) 3)>
+ *
+ * This allows passing multiple arguments to builtin functions, but means
+ * that functions of one argument, such as car, must reach through an extra
+ * layer of S-expressions in order to evaluate correctly.
+ */
+struct lval *builtin_car(struct lval *args);
+struct lval *builtin_cdr(struct lval *args);
+struct lval *builtin_list(struct lval *args);
+struct lval *builtin_eval(struct lval *args);
+/*
+ * Use join to join many S-expressions together.  Ex:
+ *
+ * (join (1) (2 3) (4))
+ *  -> returns <sexpr: (1 2 3 4)>
+ */
+struct lval *builtin_join(struct lval *args);
+
+/* Evaluate builtin symbols */
+struct lval *builtin(char *func, struct lval *sexpr);
 
 /* Evaluate an S-expression */
 struct lval *lval_eval_sexpr(struct lval *sexpr);

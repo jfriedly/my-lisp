@@ -1,126 +1,25 @@
-#include <math.h>
-#include <stdlib.h>
 #include <string.h>
 
 #include "dbg.h"
 
 #include "mpc.h"
-#include "eval.h"
 #include "lval.h"
+#include "eval.h"
+#include "lmath.h"
 
-struct lval *lval_add(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(x->val.num_long + y->val.num_long);
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_long + y->val.num_double);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(x->val.num_double + y->val.num_long);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_double + y->val.num_double);
-	return lval_err("Invalid number types");
-}
+#define LASSERT(sexpr, cond, err) if (!(cond)) { lval_del(sexpr); \
+						 return lval_err(err); }
 
-struct lval *lval_sub(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(x->val.num_long - y->val.num_long);
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_long - y->val.num_double);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(x->val.num_double - y->val.num_long);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_double - y->val.num_double);
-	return lval_err("Invalid number types");
-}
 
-struct lval *lval_mul(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(x->val.num_long * y->val.num_long);
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_long * y->val.num_double);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(x->val.num_double * y->val.num_long);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(x->val.num_double * y->val.num_double);
-	return lval_err("Invalid number types");
-}
-
-struct lval *lval_div(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return y->val.num_long == 0 ? lval_err("Division by zero") : lval_long(x->val.num_long / y->val.num_long);
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return y->val.num_double == 0.0 ? lval_err("Division by zero") : lval_double(x->val.num_long / y->val.num_double);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return y->val.num_long == 0 ? lval_err("Division by zero") : lval_double(x->val.num_double / y->val.num_long);
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return y->val.num_double == 0 ? lval_err("Division by zero") : lval_double(x->val.num_double / y->val.num_double);
-	return lval_err("Invalid number types");
-}
-
-struct lval *lval_mod(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(x->val.num_long % y->val.num_long);
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(fmod(x->val.num_long, y->val.num_double));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(fmod(x->val.num_double, y->val.num_long));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(fmod(x->val.num_double, y->val.num_double));
-	return lval_err("Invalid number types");
-}
-
-struct lval *lval_pow(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(pow(x->val.num_long, y->val.num_long));
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(pow(x->val.num_long, y->val.num_double));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(pow(x->val.num_double, y->val.num_long));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(pow(x->val.num_double, y->val.num_double));
-	return lval_err("Invalid number types");
-}
-
-struct lval *lval_max(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(fmax(x->val.num_long, y->val.num_long));
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(fmax(x->val.num_long, y->val.num_double));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(fmax(x->val.num_double, y->val.num_long));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(fmax(x->val.num_double, y->val.num_double));
-	return lval_err("Invalid number types");
-}
-
-struct lval *lval_min(struct lval *x, struct lval *y)
-{
-	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
-		return lval_long(fmin(x->val.num_long, y->val.num_long));
-	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
-		return lval_double(fmin(x->val.num_long, y->val.num_double));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
-		return lval_double(fmin(x->val.num_double, y->val.num_long));
-	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
-		return lval_double(fmin(x->val.num_double, y->val.num_double));
-	return lval_err("Invalid number types");
-}
-
-struct lval *eval_op(char *op, struct lval *numbers)
+struct lval *builtin_op(char *op, struct lval *numbers)
 {
 	/* Ensure all arguments are numbers */
 	for (int i = 0; i < numbers->count; i++) {
 		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
 			lval_del(numbers);
-			log_err("Attempted to evaluate operator %s on lval with type %d",
+			log_err("Attempted to evaluate operator %s on lval with type %d.",
 				op, numbers->cell[i]->type);
-			return lval_err("Cannot evaluate operator on non-numbers");
+			return lval_err("Operators can only be evaluated on numbers.");
 		}
 	}
 
@@ -153,7 +52,7 @@ struct lval *eval_op(char *op, struct lval *numbers)
 		else if (strcmp(op, "min") == 0)
 			acc = lval_min(acc, y);
 		else
-			sentinel("Unrecognized operator:  '%c'", *op);
+			sentinel("Unrecognized operator:  '%s'", op);
 
 		lval_del(y);
 
@@ -165,8 +64,100 @@ struct lval *eval_op(char *op, struct lval *numbers)
 	return acc;
 
 error:
-	debug("Returning error from eval_op");
+	debug("Returning error from builtin_op");
 	return lval_err("Unrecognized operator");
+}
+
+struct lval *builtin_car(struct lval *args)
+{
+	LASSERT(args, (args->count == 1), "Too many arguments passed to CAR");
+	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
+	/* TODO(jfriedly):  Make this return NIL instead */
+	LASSERT(args, (args->cell[0]->count != 0),
+		"Too few arguments given to CAR");
+
+	/* Otherwise take the first argument */
+	struct lval *arg1 = lval_take(args, 0);
+
+	while (arg1->count > 1)
+		lval_del(lval_pop(arg1, 1));
+	return lval_pop(arg1, 0);
+}
+
+struct lval *builtin_cdr(struct lval *args)
+{
+	LASSERT(args, (args->count == 1), "Too many arguments passed to CDR");
+	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
+	/* TODO(jfriedly):  Make this return NIL instead */
+	LASSERT(args, (args->cell[0]->count != 0),
+		"Too few arguments given to CDR");
+
+	/* Otherwise take the first argument */
+	struct lval *arg1 = lval_take(args, 0);
+
+	lval_del(lval_pop(arg1, 0));
+	return arg1;
+}
+
+struct lval *builtin_list(struct lval *args)
+{
+	return args;
+}
+
+struct lval *builtin_eval(struct lval *args)
+{
+	LASSERT(args, (args->count == 1), "Too many arguments to eval");
+	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
+
+	/* Otherwise take the first argument */
+	struct lval *arg1 = lval_take(args, 0);
+
+	return lval_eval(arg1);
+}
+
+struct lval *builtin_join(struct lval *args)
+{
+	for (int i = 0; i < args->count; i++) {
+		if (args->cell[i]->type == LVAL_ERR)
+			return args->cell[i];
+		LASSERT(args, (args->cell[i]->type == LVAL_SEXPR),
+			"Function JOIN passed incorrect type");
+	}
+
+	struct lval *acc = lval_pop(args, 0);
+	while (args->count)
+		acc = lval_join(acc, lval_pop(args, 0));
+
+	lval_del(args);
+	return acc;
+}
+
+struct lval *builtin(char *func, struct lval *args)
+{
+	debug("Entering builtin with function %s and args:", func);
+	lval_debug(args);
+
+	if (strcmp("car", func) == 0)
+		return builtin_car(args);
+	if (strcmp("cdr", func) == 0)
+		return builtin_cdr(args);
+	if (strcmp("list", func) == 0)
+		return builtin_list(args);
+	if (strcmp("eval", func) == 0)
+		return builtin_eval(args);
+	if (strcmp("join", func) == 0)
+		return builtin_join(args);
+	if (strcmp("max", func) == 0)
+		return builtin_op("max", args);
+	if (strcmp("min", func) == 0)
+		return builtin_op("min", args);
+	if (strstr("+-*/%^", func))
+		return builtin_op(func, args);
+	sentinel("Unrecognized function: %s", func);
+
+error:
+	lval_del(args);
+	return lval_err("Unrecognized function");
 }
 
 /* Forward declare lval_eval */
@@ -174,6 +165,21 @@ struct lval *lval_eval(struct lval *expr);
 
 struct lval *lval_eval_sexpr(struct lval *sexpr)
 {
+	/* nil */
+	if (sexpr->count == 0)
+		return sexpr;
+
+	/* Don't evaluate quoted expressions */
+	if ((sexpr->cell[0]->type == LVAL_SYM) && (strcmp(sexpr->cell[0]->val.sym, "quote") == 0)) {
+		debug("Matched quote");
+		/* Delete the quote symbol */
+		lval_del(lval_pop(sexpr, 0));
+		/* Pop out the args that were given to quote */
+		struct lval *quoted_expr = lval_pop(sexpr, 0);
+		lval_del(sexpr);
+		return quoted_expr;
+	}
+
 	/* Recursively evaluate children */
 	for (int i = 0; i < sexpr->count; i++)
 		sexpr->cell[i] = lval_eval(sexpr->cell[i]);
@@ -183,10 +189,6 @@ struct lval *lval_eval_sexpr(struct lval *sexpr)
 		if (sexpr->cell[i]->type == LVAL_ERR)
 			return lval_take(sexpr, i);
 	}
-
-	/* nil */
-	if (sexpr->count == 0)
-		return sexpr;
 
 	/* literal */
 	if (sexpr->count == 1)
@@ -198,12 +200,14 @@ struct lval *lval_eval_sexpr(struct lval *sexpr)
 	 */
 	struct lval *car = lval_pop(sexpr, 0);
 	if (car->type != LVAL_SYM) {
+		log_err("Not a symbol:");
+		lval_println(stderr, car);
 		lval_del(car);
 		lval_del(sexpr);
-		return lval_err("S-expression does not start with a symbol");
+		return lval_err("S-expression must start with a symbol");
 	}
 
-	struct lval *result = eval_op(car->val.sym, sexpr);
+	struct lval *result = builtin(car->val.sym, sexpr);
 	lval_del(car);
 	return result;
 }
