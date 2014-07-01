@@ -70,7 +70,7 @@ int main(int argc, char **argv)
 	mpca_lang(MPCA_LANG_DEFAULT,
 		"												\
 		number   : /-?[0-9.]+/ ;									\
-		symbol   : \"car\" | \"cdr\" | \"list\" | \"join\" | \"eval\" | \"quote\" | 			\
+		symbol   : \"car\" | \"cdr\" | \"list\" | \"eval\" | \"join\" | \"length\" | \"quote\" |	\
 			   '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;				\
 		expr     : <number> | <symbol> | <sexpr> ;							\
 		sexpr    : '(' <expr>* ')' ;									\

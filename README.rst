@@ -20,10 +20,11 @@ Create a build directory, then compile with the commands below:
 
     mkdir -p build
 
-    git checkout chapter-4; cc -std=c99 -Wall prompt.c -o build/prompt
-    git checkout chapter-7; cc -Wall -std=c99 parsing.c mpc.c -lm -ledit -o build/parsing
-    git checkout chapter-8; cc -Wall -std=c99 parsing.c mpc.c eval.c -lm -ledit -o build/parsing
-    git checkout chapter-9; cc -Wall -std=c99 mylisp.c mpc.c eval.c lval.c -lm -ledit -o build/mylisp
+    git checkout chapter-4;  cc -std=c99 -Wall prompt.c -o build/prompt
+    git checkout chapter-7;  cc -Wall -std=c99 parsing.c mpc.c -lm -ledit -o build/parsing
+    git checkout chapter-8;  cc -Wall -std=c99 parsing.c mpc.c eval.c -lm -ledit -o build/parsing
+    git checkout chapter-9;  cc -Wall -std=c99 mylisp.c mpc.c eval.c lval.c -lm -ledit -o build/mylisp
+    git checkout chapter-10; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
 
 
 TODO

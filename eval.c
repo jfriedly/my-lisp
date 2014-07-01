@@ -132,6 +132,13 @@ struct lval *builtin_join(struct lval *args)
 	return acc;
 }
 
+struct lval *builtin_length(struct lval *args)
+{
+	/* Otherwise take the first argument */
+	struct lval *arg1 = lval_take(args, 0);
+	return lval_long(arg1->count);
+}
+
 struct lval *builtin(char *func, struct lval *args)
 {
 	debug("Entering builtin with function %s and args:", func);
@@ -147,6 +154,8 @@ struct lval *builtin(char *func, struct lval *args)
 		return builtin_eval(args);
 	if (strcmp("join", func) == 0)
 		return builtin_join(args);
+	if (strcmp("length", func) == 0)
+		return builtin_length(args);
 	if (strcmp("max", func) == 0)
 		return builtin_op("max", args);
 	if (strcmp("min", func) == 0)
