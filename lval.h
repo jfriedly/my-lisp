@@ -8,14 +8,14 @@
 /* TODO(jfriedly):  Use cons cells instead of an array of lvals. */
 struct lval {
 	short type;
-    union {
-        long num_long;
-        double num_double;
-        char *err;
-        char *sym;
-    } val ;
-    int count;
-    struct lval **cell;
+	union {
+		long num_long;
+		double num_double;
+		char *err;
+		char *sym;
+	} val ;
+	int count;
+	struct lval **cell;
 };
 
 /* lval types */
@@ -23,8 +23,8 @@ enum {
 	LVAL_LONG,
 	LVAL_DOUBLE,
 	LVAL_ERR,
-    LVAL_SYM,
-    LVAL_SEXPR,
+	LVAL_SYM,
+	LVAL_SEXPR,
 };
 
 /* lval constructors */
