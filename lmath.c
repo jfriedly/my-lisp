@@ -3,7 +3,6 @@
 #include "dbg.h"
 
 #include "lval.h"
-#include "lmath.h"
 
 struct lval *lval_add(struct lval *x, struct lval *y)
 {

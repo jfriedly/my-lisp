@@ -5,7 +5,6 @@
 #include "mpc.h"
 #include "lval.h"
 #include "eval.h"
-#include "lmath.h"
 
 #define LASSERT(sexpr, cond, err) if (!(cond)) { lval_del(sexpr); \
 						 return lval_err(err); }

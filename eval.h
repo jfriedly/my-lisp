@@ -56,4 +56,14 @@ struct lval *lval_eval_sexpr(struct lval *sexpr);
  */
 struct lval *lval_eval(struct lval *expr);
 
+/* math operations on lvals */
+struct lval *lval_add(struct lval *x, struct lval *y);
+struct lval *lval_sub(struct lval *x, struct lval *y);
+struct lval *lval_mul(struct lval *x, struct lval *y);
+struct lval *lval_div(struct lval *x, struct lval *y);
+struct lval *lval_mod(struct lval *x, struct lval *y);
+struct lval *lval_pow(struct lval *x, struct lval *y);
+struct lval *lval_max(struct lval *x, struct lval *y);
+struct lval *lval_min(struct lval *x, struct lval *y);
+
 #endif
