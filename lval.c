@@ -6,6 +6,15 @@
 #include "mpc.h"
 #include "lval.h"
 
+struct lenv *lenv_new(void)
+{
+	struct lenv *env = malloc(sizeof(struct lenv));
+	env->count = 0;
+	env->syms = NULL;
+	env->vals = NULL;
+	return env;
+}
+
 struct lval *lval_long(long x)
 {
 	struct lval *v = malloc(sizeof(struct lval));
@@ -46,6 +55,14 @@ struct lval *lval_sexpr(void)
 	v->type = LVAL_SEXPR;
 	v->count = 0;
 	v->cell = NULL;
+	return v;
+}
+
+struct lval *lval_func(struct lval *(*func)(struct lenv *env, struct lval *v))
+{
+	struct lval *v = malloc(sizeof(struct lval));
+	v->type = LVAL_FUNC;
+	v->val.func = func;
 	return v;
 }
 
@@ -92,6 +109,100 @@ struct lval *lval_take(struct lval *sexpr, int i)
 	struct lval *ret = lval_pop(sexpr, i);
 	lval_del(sexpr);
 	return ret;
+}
+
+struct lval *lval_copy(struct lval *v)
+{
+	struct lval *x = malloc(sizeof(struct lval));
+	x->type = v->type;
+
+	switch (v->type) {
+	/* Copy numbers directly */
+	case LVAL_LONG:
+		x->val.num_long = v->val.num_long;
+		break;
+	case LVAL_DOUBLE:
+		x->val.num_double = v->val.num_double;
+		break;
+
+	/* Copy strings using malloc and strcpy */
+	case LVAL_ERR:
+		x->val.err = malloc(strlen(v->val.err) + 1);
+		strcpy(x->val.err, v->val.err);
+		break;
+	case LVAL_SYM:
+		x->val.sym = malloc(strlen(v->val.sym) + 1);
+		strcpy(x->val.sym, v->val.sym);
+		break;
+
+	/* Copy lists by recursively copying sub expressions */
+	case LVAL_SEXPR:
+		x->count = v->count;
+		x->cell = malloc(sizeof(struct lval *) * v->count);
+		for (int i = 0; i < x->count; i++) {
+			x->cell[i] = lval_copy(v->cell[i]);
+		}
+		break;
+
+	/* Copy functions directly */
+	case LVAL_FUNC:
+		x->val.func = v->val.func;
+		break;
+	default:
+		log_err("Attempted to copy an unrecognized lval type: %d",
+			v->type);
+	}
+
+	return x;
+}
+
+struct lval *lenv_get(struct lenv *env, struct lval *k)
+{
+	/* Iterate over every element in the environnment to find the key */
+	for (int i = 0; i < env->count; i++) {
+		if (strcmp(env->syms[i], k->val.sym) == 0)
+			return lval_copy(env->vals[i]);
+	}
+
+	/* If the key isn't found, return an error */
+	log_err("Unbound symbol:  '%s'", k->val.sym);
+	return lval_err("Unbound symbol");
+}
+
+void lenv_set(struct lenv *env, struct lval *k, struct lval *v)
+{
+	/*
+	 * Iterate over every element in the environment in case the key is
+	 * already bound and just needs to be replaced.
+	 */
+	for (int i = 0; i < env->count; i++) {
+		if (strcmp(env->syms[i], k->val.sym) == 0) {
+			lval_del(env->vals[i]);
+			env->vals[i] = lval_copy(v);
+			return;
+		}
+	}
+
+	/* If no existing key was found, allocate space for a new pair */
+	env->count++;
+	env->vals = realloc(env->vals, sizeof(struct lval*) * env->count);
+	env->syms = realloc(env->syms, sizeof(char*) * env->count);
+
+	/* Copy the key and value into the environment */
+	env->vals[env->count-1] = lval_copy(v);
+	env->syms[env->count-1] = malloc(strlen(k->val.sym) + 1);
+	strcpy(env->syms[env->count-1], k->val.sym);
+}
+
+void lenv_add_builtin(struct lenv *env,
+			char *name,
+			struct lval *(*func)(struct lenv *env, struct lval *v))
+{
+	struct lval *k = lval_sym(name);
+	struct lval *v = lval_func(func);
+	lenv_set(env, k, v);
+	lval_del(k);
+	lval_del(v);
 }
 
 struct lval *lval_read_num(mpc_ast_t *ast)
@@ -149,12 +260,22 @@ error:
 	return NULL;
 }
 
+void lenv_del(struct lenv *env)
+{
+	for (int i = 0; i < env->count; i++) {
+		free(env->syms[i]);
+		lval_del(env->vals[i]);
+	}
+	free(env->syms);
+	free(env->vals);
+	free(env);
+}
+
 void lval_del(struct lval *v)
 {
 	switch (v->type) {
 	/* We don't have to do anything special for numbers */
 	case LVAL_LONG:
-		break;
 	case LVAL_DOUBLE:
 		break;
 
@@ -173,6 +294,11 @@ void lval_del(struct lval *v)
 		/* Also free the memory allocated to contain the pointers */
 		free(v->cell);
 		break;
+
+	/* We don't have to do anything special for functions */
+	case LVAL_FUNC:
+		break;
+
 	default:
 		log_err("Attempted to delete an unrecognized lval type: %d",
 			v->type);
@@ -213,6 +339,13 @@ void lval_print(FILE *stream, struct lval *v)
 		break;
 	case LVAL_SEXPR:
 		lval_expr_print(stream, v, '(', ')');
+		break;
+	case LVAL_FUNC:
+		/*
+		 * TODO(jfriedly):  Figure out a way to make this print the
+		 * name of the function.
+		 */
+		fprintf(stream, "<function at %p>", v->val.func);
 		break;
 	default:
 		log_err("Attempted to print an unrecognized lval type %d",

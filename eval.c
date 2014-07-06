@@ -6,68 +6,7 @@
 #include "lval.h"
 #include "eval.h"
 
-#define LASSERT(sexpr, cond, err) if (!(cond)) { lval_del(sexpr); \
-						 return lval_err(err); }
-
-
-struct lval *builtin_op(char *op, struct lval *numbers)
-{
-	/* Ensure all arguments are numbers */
-	for (int i = 0; i < numbers->count; i++) {
-		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
-			lval_del(numbers);
-			log_err("Attempted to evaluate operator %s on lval with type %d.",
-				op, numbers->cell[i]->type);
-			return lval_err("Operators can only be evaluated on numbers.");
-		}
-	}
-
-	/*
-	 * Pop the first number; it becomes our accumulator.  There will
-	 * be at least one number because lval_eval_sexpr guarantees that
-	 * for us.
-	 *
-	 * If there is only one number, we'll return that number unchanged.
-	 */
-	struct lval *acc = lval_pop(numbers, 0);
-
-	/* While there are still elements remaining */
-	while (numbers->count > 0) {
-		struct lval *y = lval_pop(numbers, 0);
-		if (strcmp(op, "+") == 0)
-			acc = lval_add(acc, y);
-		else if (strcmp(op, "-") == 0)
-			acc = lval_sub(acc, y);
-		else if (strcmp(op, "*") == 0)
-			acc = lval_mul(acc, y);
-		else if (strcmp(op, "/") == 0)
-			acc = lval_div(acc, y);
-		else if (strcmp(op, "%") == 0)
-			acc = lval_mod(acc, y);
-		else if (strcmp(op, "^") == 0)
-			acc = lval_pow(acc, y);
-		else if (strcmp(op, "max") == 0)
-			acc = lval_max(acc, y);
-		else if (strcmp(op, "min") == 0)
-			acc = lval_min(acc, y);
-		else
-			sentinel("Unrecognized operator:  '%s'", op);
-
-		lval_del(y);
-
-		if (acc->type == LVAL_ERR)
-			break;
-	}
-
-	lval_del(numbers);
-	return acc;
-
-error:
-	debug("Returning error from builtin_op");
-	return lval_err("Unrecognized operator");
-}
-
-struct lval *builtin_car(struct lval *args)
+struct lval *builtin_car(struct lenv *env, struct lval *args)
 {
 	LASSERT(args, (args->count == 1), "Too many arguments passed to CAR");
 	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
@@ -83,7 +22,7 @@ struct lval *builtin_car(struct lval *args)
 	return lval_pop(arg1, 0);
 }
 
-struct lval *builtin_cdr(struct lval *args)
+struct lval *builtin_cdr(struct lenv *env, struct lval *args)
 {
 	LASSERT(args, (args->count == 1), "Too many arguments passed to CDR");
 	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
@@ -98,12 +37,12 @@ struct lval *builtin_cdr(struct lval *args)
 	return arg1;
 }
 
-struct lval *builtin_list(struct lval *args)
+struct lval *builtin_list(struct lenv *env, struct lval *args)
 {
 	return args;
 }
 
-struct lval *builtin_eval(struct lval *args)
+struct lval *builtin_eval(struct lenv *env, struct lval *args)
 {
 	LASSERT(args, (args->count == 1), "Too many arguments to eval");
 	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
@@ -111,10 +50,10 @@ struct lval *builtin_eval(struct lval *args)
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
 
-	return lval_eval(arg1);
+	return lval_eval(env, arg1);
 }
 
-struct lval *builtin_join(struct lval *args)
+struct lval *builtin_join(struct lenv *env, struct lval *args)
 {
 	for (int i = 0; i < args->count; i++) {
 		if (args->cell[i]->type == LVAL_ERR)
@@ -131,47 +70,17 @@ struct lval *builtin_join(struct lval *args)
 	return acc;
 }
 
-struct lval *builtin_length(struct lval *args)
+struct lval *builtin_length(struct lenv *env, struct lval *args)
 {
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
 	return lval_long(arg1->count);
 }
 
-struct lval *builtin(char *func, struct lval *args)
-{
-	debug("Entering builtin with function %s and args:", func);
-	lval_debug(args);
-
-	if (strcmp("car", func) == 0)
-		return builtin_car(args);
-	if (strcmp("cdr", func) == 0)
-		return builtin_cdr(args);
-	if (strcmp("list", func) == 0)
-		return builtin_list(args);
-	if (strcmp("eval", func) == 0)
-		return builtin_eval(args);
-	if (strcmp("join", func) == 0)
-		return builtin_join(args);
-	if (strcmp("length", func) == 0)
-		return builtin_length(args);
-	if (strcmp("max", func) == 0)
-		return builtin_op("max", args);
-	if (strcmp("min", func) == 0)
-		return builtin_op("min", args);
-	if (strstr("+-*/%^", func))
-		return builtin_op(func, args);
-	sentinel("Unrecognized function: %s", func);
-
-error:
-	lval_del(args);
-	return lval_err("Unrecognized function");
-}
-
 /* Forward declare lval_eval */
-struct lval *lval_eval(struct lval *expr);
+struct lval *lval_eval(struct lenv *env, struct lval *v);
 
-struct lval *lval_eval_sexpr(struct lval *sexpr)
+struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr)
 {
 	/* nil */
 	if (sexpr->count == 0)
@@ -190,7 +99,7 @@ struct lval *lval_eval_sexpr(struct lval *sexpr)
 
 	/* Recursively evaluate children */
 	for (int i = 0; i < sexpr->count; i++)
-		sexpr->cell[i] = lval_eval(sexpr->cell[i]);
+		sexpr->cell[i] = lval_eval(env, sexpr->cell[i]);
 
 	/* Error handling */
 	for (int i = 0; i < sexpr->count; i++) {
@@ -204,28 +113,33 @@ struct lval *lval_eval_sexpr(struct lval *sexpr)
 
 	/*
 	 * Otherwise, we have an expression with multiple elements.
-	 * Ensure the first element is a symbol.
+	 * Ensure the first element is a function.
 	 */
-	struct lval *car = lval_pop(sexpr, 0);
-	if (car->type != LVAL_SYM) {
-		log_err("Not a symbol:");
-		lval_println(stderr, car);
-		lval_del(car);
+	struct lval *f = lval_pop(sexpr, 0);
+	if (f->type != LVAL_FUNC) {
+		log_err("Not a function:");
+		lval_println(stderr, f);
+		lval_del(f);
 		lval_del(sexpr);
-		return lval_err("S-expression must start with a symbol");
+		return lval_err("S-expression must start with a function");
 	}
 
-	struct lval *result = builtin(car->val.sym, sexpr);
-	lval_del(car);
+	struct lval *result = f->val.func(env, sexpr);
+	lval_del(f);
 	return result;
 }
 
-struct lval *lval_eval(struct lval *expr)
+struct lval *lval_eval(struct lenv *env, struct lval *v)
 {
+	/* Look up symbols in the environment */
+	if (v->type == LVAL_SYM) {
+		struct lval *x = lenv_get(env, v);
+		lval_del(v);
+		return x;
+	}
 	/* Evaluate S-expressions */
-	if (expr->type == LVAL_SEXPR)
-		return lval_eval_sexpr(expr);
+	if (v->type == LVAL_SEXPR)
+		return lval_eval_sexpr(env, v);
 	/* All other lval types remain the same */
-	return expr;
+	return v;
 }
-

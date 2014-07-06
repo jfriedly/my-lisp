@@ -54,6 +54,24 @@ mpc_ast_t *parse(mpc_parser_t *parser, char *input)
 	return r.output;
 }
 
+void lenv_add_builtins(struct lenv *env)
+{
+	lenv_add_builtin(env, "car", builtin_car);
+	lenv_add_builtin(env, "cdr", builtin_cdr);
+	lenv_add_builtin(env, "list", builtin_list);
+	lenv_add_builtin(env, "eval", builtin_eval);
+	lenv_add_builtin(env, "join", builtin_join);
+	lenv_add_builtin(env, "length", builtin_length);
+	lenv_add_builtin(env, "max", builtin_max);
+	lenv_add_builtin(env, "min", builtin_min);
+	lenv_add_builtin(env, "+", builtin_add);
+	lenv_add_builtin(env, "-", builtin_sub);
+	lenv_add_builtin(env, "*", builtin_mul);
+	lenv_add_builtin(env, "/", builtin_div);
+	lenv_add_builtin(env, "%", builtin_mod);
+	lenv_add_builtin(env, "^", builtin_pow);
+}
+
 int main(int argc, char **argv)
 {
 	/* Create some mpc parsers */
@@ -62,18 +80,17 @@ int main(int argc, char **argv)
 	mpc_parser_t *Expr     = mpc_new("expr");
 	mpc_parser_t *SExpr     = mpc_new("sexpr");
 	mpc_parser_t *MyLisp   = mpc_new("mylisp");
-	/* Define the parsers with the followning language
+	/* Define the parsers with the following language
 	 *
 	 * TODO(jfriedly):  Implement concepts of unary, binary, etc. symbols.
 	 * For example, (/ 1) should be a syntax error.
 	 */
 	mpca_lang(MPCA_LANG_DEFAULT,
-		"												\
-		number   : /-?[0-9.]+/ ;									\
-		symbol   : \"car\" | \"cdr\" | \"list\" | \"eval\" | \"join\" | \"length\" | \"quote\" |	\
-			   '+' | '-' | '*' | '/' | '%' | '^' | \"min\" | \"max\" ;				\
-		expr     : <number> | <symbol> | <sexpr> ;							\
-		sexpr    : '(' <expr>* ')' ;									\
+		"							\
+		number   : /-?[0-9.]+/ ;				\
+		symbol   : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!%^]+/;		\
+		expr     : <number> | <symbol> | <sexpr> ;		\
+		sexpr    : '(' <expr>* ')' ;				\
 		mylisp   : /^/ <sexpr> /$/ ;",
 		Number, Symbol, Expr, SExpr, MyLisp);
 
@@ -84,13 +101,17 @@ int main(int argc, char **argv)
 	rl_initialize();
 	errno = 0;
 
+	/* singleton */
+	struct lenv *env = lenv_new();
+	lenv_add_builtins(env);
+
 	while (1) {
 		char *input = readline("my-lisp> ");
 		add_history(input);
 
 		mpc_ast_t *ast = parse(MyLisp, input);
 		if (ast != NULL) {
-			struct lval *v = lval_eval(lval_read(ast));
+			struct lval *v = lval_eval(env, lval_read(ast));
 			lval_println(stdout, v);
 			lval_del(v);
 			mpc_ast_delete(ast);
