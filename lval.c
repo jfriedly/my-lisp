@@ -6,6 +6,28 @@
 #include "mpc.h"
 #include "lval.h"
 
+char *ltype(int type)
+{
+	switch (type) {
+	case LVAL_LONG:
+		return "Integer";
+	case LVAL_DOUBLE:
+		return "Float";
+	case LVAL_ERR:
+		return "Error";
+	case LVAL_SYM:
+		return "Symbol";
+	case LVAL_SEXPR:
+		return "S-Expression";
+	case LVAL_FUNC:
+		return "Function";
+	default: {
+		char *err = malloc(32);
+		sprintf(err, "Unknown (%d)", type);
+		return realloc(err, strlen(err) + 1); }
+	}
+}
+
 struct lenv *lenv_new(void)
 {
 	struct lenv *env = malloc(sizeof(struct lenv));
@@ -31,12 +53,24 @@ struct lval *lval_double(double x)
 	return v;
 }
 
-struct lval *lval_err(char *m)
+struct lval *lval_err(char *fmt, ...)
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_ERR;
-	v->val.err = malloc(strlen(m) + 1);
-	strcpy(v->val.err, m);
+
+	/* Create a va list and initialize it */
+	va_list va;
+	va_start(va, fmt);
+
+	/* Allocate 512 bytes for the error message (hopefully enough) */
+	v->val.err = malloc(512);
+
+	/* printf into the error string up to 511 characters */
+	vsnprintf(v->val.err, 511, fmt, va);
+
+	/* Reallocate to the number of bytes actually used */
+	v->val.err = realloc(v->val.err, strlen(v->val.err) + 1);
+	va_end(va);
 	return v;
 }
 
@@ -76,10 +110,14 @@ struct lval *lval_append(struct lval *head, struct lval *tail)
 
 struct lval *lval_join(struct lval *head, struct lval *tail)
 {
-	/* For each cell in the tail, append it onto the end of the head */
-	while (tail->count)
-		head = lval_append(head, lval_pop(tail, 0));
-	lval_del(tail);
+	if (tail->type == LVAL_SEXPR) {
+		/* For each cell in the tail, append it onto the end of the head */
+		while (tail->count)
+			head = lval_append(head, lval_pop(tail, 0));
+		lval_del(tail);
+	} else {
+		lval_append(head, tail);
+	}
 	return head;
 }
 
@@ -149,8 +187,10 @@ struct lval *lval_copy(struct lval *v)
 		x->val.func = v->val.func;
 		break;
 	default:
-		log_err("Attempted to copy an unrecognized lval type: %d",
-			v->type);
+		lval_del(x);
+		/* There's a bug if this ever doesn't print Unknown. */
+		return lval_err("Attempted to copy unknown type %s.",
+			ltype(v->type));
 	}
 
 	return x;
@@ -165,8 +205,7 @@ struct lval *lenv_get(struct lenv *env, struct lval *k)
 	}
 
 	/* If the key isn't found, return an error */
-	log_err("Unbound symbol:  '%s'", k->val.sym);
-	return lval_err("Unbound symbol");
+	return lval_err("Unbound symbol:  '%s'", k->val.sym);
 }
 
 void lenv_set(struct lenv *env, struct lval *k, struct lval *v)
@@ -218,7 +257,8 @@ struct lval *lval_read_num(mpc_ast_t *ast)
 		if (errno != ERANGE)
 			return lval_long(x);
 		else
-			return lval_err("Number out of range");
+			return lval_err("Number out of range: %s",
+				ast->contents);
 	}
 }
 
@@ -300,8 +340,9 @@ void lval_del(struct lval *v)
 		break;
 
 	default:
-		log_err("Attempted to delete an unrecognized lval type: %d",
-			v->type);
+		/* There's a bug if this ever doesn't print Unknown. */
+		log_err("Attempted to delete an unrecognized lval type: %s.",
+			ltype(v->type));
 	}
 
 	free(v);
@@ -348,8 +389,9 @@ void lval_print(FILE *stream, struct lval *v)
 		fprintf(stream, "<function at %p>", v->val.func);
 		break;
 	default:
-		log_err("Attempted to print an unrecognized lval type %d",
-			v->type);
+		/* There's a bug if this ever doesn't print Unknown. */
+		log_err("Attempted to print an unrecognized lval type %s.",
+			ltype(v->type));
 	}
 }
 
@@ -357,12 +399,4 @@ void lval_println(FILE *stream, struct lval *v)
 {
 	lval_print(stream, v);
 	putc('\n', stream);
-}
-
-void lval_debug(struct lval *v)
-{
-	if (DEBUG) {
-		fprintf(stderr, "DEBUG %s:%d: ", __FILE__, __LINE__);
-		lval_println(stderr, v);
-	}
 }

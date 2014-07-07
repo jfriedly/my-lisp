@@ -3,8 +3,22 @@
 
 #include "lval.h"
 
-#define LASSERT(sexpr, cond, err) if (!(cond)) { lval_del(sexpr); \
-						 return lval_err(err); }
+#define LASSERT(expr, cond, fmt, ...) \
+	if (!(cond)) { \
+		struct lval *err = lval_err(fmt, ##__VA_ARGS__); \
+		lval_del(expr); \
+		return err; \
+	}
+
+#define LASSERT_ARGC(expr, expected, func_name) \
+	LASSERT(expr, (expr->count == expected), \
+		"Function %s passed incorrect number of arguments.  " \
+		"Got %d.  Expected %d.", func_name, expr->count, expected);
+
+#define LASSERT_TYPE(expr, expected, func_name) \
+	LASSERT(expr, (expr->type == expected), \
+		"Function %s passed incorrect type.  Got %s.  " \
+		"Expected %s.", func_name, ltype(expr->type), ltype(expected));
 
 /*
  * C functions that implement Lisp primitives

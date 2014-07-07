@@ -8,27 +8,28 @@
 
 struct lval *builtin_car(struct lenv *env, struct lval *args)
 {
-	LASSERT(args, (args->count == 1), "Too many arguments passed to CAR");
-	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
-	/* TODO(jfriedly):  Make this return NIL instead */
-	LASSERT(args, (args->cell[0]->count != 0),
-		"Too few arguments given to CAR");
+	/* TODO(jfriedly):  Make this return NIL on 0 args */
+	LASSERT_ARGC(args, 1, "CAR");
+	LASSERT_TYPE(args->cell[0], LVAL_SEXPR, "CAR");
+	debug("CAR passed type");
 
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
 
-	while (arg1->count > 1)
+	debug("CAR entering while loop");
+	while (arg1->count > 1) {
+		debug("CAR in while loop");
 		lval_del(lval_pop(arg1, 1));
+	}
+	debug("CAR exited while loop");
 	return lval_pop(arg1, 0);
 }
 
 struct lval *builtin_cdr(struct lenv *env, struct lval *args)
 {
-	LASSERT(args, (args->count == 1), "Too many arguments passed to CDR");
-	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
-	/* TODO(jfriedly):  Make this return NIL instead */
-	LASSERT(args, (args->cell[0]->count != 0),
-		"Too few arguments given to CDR");
+	/* TODO(jfriedly):  Make this return NIL on 0 args */
+	LASSERT_ARGC(args, 1, "CDR");
+	LASSERT_TYPE(args->cell[0], LVAL_SEXPR, "CDR");
 
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
@@ -44,8 +45,8 @@ struct lval *builtin_list(struct lenv *env, struct lval *args)
 
 struct lval *builtin_eval(struct lenv *env, struct lval *args)
 {
-	LASSERT(args, (args->count == 1), "Too many arguments to eval");
-	LASSERT(args, (args->cell[0]->type == LVAL_SEXPR), "Not a list");
+	LASSERT_ARGC(args, 1, "EVAL");
+	LASSERT_TYPE(args->cell[0], LVAL_SEXPR, "EVAL");
 
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
@@ -58,11 +59,10 @@ struct lval *builtin_join(struct lenv *env, struct lval *args)
 	for (int i = 0; i < args->count; i++) {
 		if (args->cell[i]->type == LVAL_ERR)
 			return args->cell[i];
-		LASSERT(args, (args->cell[i]->type == LVAL_SEXPR),
-			"Function JOIN passed incorrect type");
 	}
 
-	struct lval *acc = lval_pop(args, 0);
+	struct lval *acc = lval_sexpr();
+	debug("JOIN entering while loop");
 	while (args->count)
 		acc = lval_join(acc, lval_pop(args, 0));
 
@@ -79,11 +79,9 @@ struct lval *builtin_length(struct lenv *env, struct lval *args)
 
 struct lval *builtin_set(struct lenv *env, struct lval *args)
 {
-	LASSERT(args, (args->count == 2),
-		"Function SET must be passed exactly two arguments");
+	LASSERT_ARGC(args, 2, "SET");
 	/* First argument is a symbol to define */
-	LASSERT(args, (args->cell[0]->type == LVAL_SYM),
-		"Function SET must be passed a symbol to bind!");
+	LASSERT_TYPE(args->cell[0], LVAL_SYM, "SET");
 	lenv_set(env, args->cell[0], args->cell[1]);
 	lval_del(args);
 	return lval_sexpr();
@@ -136,6 +134,7 @@ struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr)
 		return lval_err("S-expression must start with a function");
 	}
 
+	debug("Calling func");
 	struct lval *result = f->val.func(env, sexpr);
 	lval_del(f);
 	return result;

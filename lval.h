@@ -32,6 +32,8 @@ enum {
 	LVAL_FUNC,
 };
 
+char *ltype(int type);
+
 /* Lisp environment, a key-value store of lvals : lvals */
 struct lenv {
 	int count;
@@ -45,7 +47,7 @@ struct lenv *lenv_new(void);
 /* lval constructors */
 struct lval *lval_long(long x);
 struct lval *lval_double(double x);
-struct lval *lval_err(char *m);
+struct lval *lval_err(char *fmt, ...);
 struct lval *lval_sym(char *s);
 struct lval *lval_sexpr(void);
 struct lval *lval_func(struct lval *(*func)(struct lenv *env, struct lval *v));
@@ -95,6 +97,5 @@ struct lval *lval_read(mpc_ast_t *ast);
 void lval_expr_print(FILE *stream, struct lval *v, char open, char close);
 void lval_print(FILE *stream, struct lval *v);
 void lval_println(FILE *stream, struct lval *v);
-void lval_debug(struct lval *v);
 
 #endif
