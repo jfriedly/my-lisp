@@ -63,6 +63,8 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "join", builtin_join);
 	lenv_add_builtin(env, "length", builtin_length);
 	lenv_add_builtin(env, "set", builtin_set);
+	lenv_add_builtin(env, "env", builtin_env);
+	lenv_add_builtin(env, "exit", builtin_exit);
 	lenv_add_builtin(env, "max", builtin_max);
 	lenv_add_builtin(env, "min", builtin_min);
 	lenv_add_builtin(env, "+", builtin_add);
@@ -96,7 +98,7 @@ int main(int argc, char **argv)
 		Number, Symbol, Expr, SExpr, MyLisp);
 
 	puts("My-lisp Version 0.0.0.0.1");
-	puts("Press Ctrl+C to exit\n");
+	puts("Use (exit) to quit the REPL, or press Ctrl+C\n");
 
 	/* TODO(jfriedly):  Why does initializing readline set ENOENT? */
 	rl_initialize();

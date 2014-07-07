@@ -50,8 +50,6 @@ TODO
 
 * Implement support for more math:  absolute_value, etc.
 
-* Write a function for printing out all the named values in an environment
-
 * Handle EOF
 
 * Support comparators (equals, less than, greater than, etc.)
@@ -59,8 +57,6 @@ TODO
 * Support conditional expressions
 
 * Support function definition
-
-* Create an ``exit`` function for stopping the REPL and exiting.
 
 * Implement support for macros
 

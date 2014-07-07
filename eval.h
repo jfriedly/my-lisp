@@ -60,6 +60,10 @@ struct lval *builtin_join(struct lenv *env, struct lval *args);
 struct lval *builtin_length(struct lenv *env, struct lval *args);
 /* Sets a variable */
 struct lval *builtin_set(struct lenv *env, struct lval *args);
+/* Prints all variables in the environment */
+struct lval *builtin_env(struct lenv *env, struct lval *args);
+/* Exits the REPL */
+struct lval *builtin_exit(struct lenv *env, struct lval *args);
 
 /* Evaluate an S-expression */
 struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr);

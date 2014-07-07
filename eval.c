@@ -87,6 +87,21 @@ struct lval *builtin_set(struct lenv *env, struct lval *args)
 	return lval_sexpr();
 }
 
+struct lval *builtin_env(struct lenv *env, struct lval *args)
+{
+	for (int i = 0; i < env->count; i++) {
+		printf("%s:  ", env->syms[i]);
+		lval_println(stdout, env->vals[i]);
+	}
+	return lval_sexpr();
+}
+
+struct lval *builtin_exit(struct lenv *env, struct lval *args)
+{
+	printf("Bye.\n");
+	exit(0);
+}
+
 /* Forward declare lval_eval */
 struct lval *lval_eval(struct lenv *env, struct lval *v);
 
@@ -117,14 +132,7 @@ struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr)
 			return lval_take(sexpr, i);
 	}
 
-	/* literal */
-	if (sexpr->count == 1)
-		return lval_take(sexpr, 0);
-
-	/*
-	 * Otherwise, we have an expression with multiple elements.
-	 * Ensure the first element is a function.
-	 */
+	/* Ensure the first element is a function.  */
 	struct lval *f = lval_pop(sexpr, 0);
 	if (f->type != LVAL_FUNC) {
 		log_err("Not a function:");
