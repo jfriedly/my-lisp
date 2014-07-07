@@ -44,6 +44,8 @@ struct lval *builtin_eval(struct lenv *env, struct lval *args);
 struct lval *builtin_join(struct lenv *env, struct lval *args);
 /* Returns the length of an S-expression */
 struct lval *builtin_length(struct lenv *env, struct lval *args);
+/* Sets a variable */
+struct lval *builtin_set(struct lenv *env, struct lval *args);
 
 /* Evaluate an S-expression */
 struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr);

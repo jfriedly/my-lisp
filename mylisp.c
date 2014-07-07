@@ -62,6 +62,7 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "eval", builtin_eval);
 	lenv_add_builtin(env, "join", builtin_join);
 	lenv_add_builtin(env, "length", builtin_length);
+	lenv_add_builtin(env, "set", builtin_set);
 	lenv_add_builtin(env, "max", builtin_max);
 	lenv_add_builtin(env, "min", builtin_min);
 	lenv_add_builtin(env, "+", builtin_add);
@@ -111,6 +112,12 @@ int main(int argc, char **argv)
 
 		mpc_ast_t *ast = parse(MyLisp, input);
 		if (ast != NULL) {
+			/*
+			 * To print the expression as it was parsed before
+			 * evaluation, uncomment this line:
+			 *
+			 * lval_println(stderr, lval_read(ast));
+			 */
 			struct lval *v = lval_eval(env, lval_read(ast));
 			lval_println(stdout, v);
 			lval_del(v);

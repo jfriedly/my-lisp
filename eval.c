@@ -77,6 +77,18 @@ struct lval *builtin_length(struct lenv *env, struct lval *args)
 	return lval_long(arg1->count);
 }
 
+struct lval *builtin_set(struct lenv *env, struct lval *args)
+{
+	LASSERT(args, (args->count == 2),
+		"Function SET must be passed exactly two arguments");
+	/* First argument is a symbol to define */
+	LASSERT(args, (args->cell[0]->type == LVAL_SYM),
+		"Function SET must be passed a symbol to bind!");
+	lenv_set(env, args->cell[0], args->cell[1]);
+	lval_del(args);
+	return lval_sexpr();
+}
+
 /* Forward declare lval_eval */
 struct lval *lval_eval(struct lenv *env, struct lval *v);
 
