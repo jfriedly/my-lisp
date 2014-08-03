@@ -221,6 +221,9 @@ struct lval *lval_copy(struct lval *v)
 			x->val.func.body = lval_copy(v->val.func.body);
 		}
 		break;
+	case LVAL_BOOL:
+		x->val.b = v->val.b;
+		break;
 	default:
 		lval_del(x);
 		/* There's a bug if this ever doesn't print Unknown. */

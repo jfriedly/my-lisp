@@ -51,10 +51,12 @@ struct lval *builtin_list(struct lenv *env, struct lval *args);
 struct lval *builtin_eval(struct lenv *env, struct lval *args);
 /* Create a new user-defined function */
 struct lval *builtin_lambda(struct lenv *env, struct lval *args);
-/* Utility function to turn other types of lvals into booleans */
-struct lval *_convert_to_bool(struct lval *v);
 /* Negate a boolean */
 struct lval *builtin_not(struct lenv *env, struct lval *args);
+/* Return the OR of several lvals */
+struct lval *builtin_or(struct lenv *env, struct lval *args);
+/* Return the AND of several lvals */
+struct lval *builtin_and(struct lenv *env, struct lval *args);
 /*
  * Use join to join many S-expressions together.  Ex:
  *
@@ -64,8 +66,6 @@ struct lval *builtin_not(struct lenv *env, struct lval *args);
 struct lval *builtin_join(struct lenv *env, struct lval *args);
 /* Returns the length of an S-expression */
 struct lval *builtin_length(struct lenv *env, struct lval *args);
-/* Common code used by both builtin_let and builtin_set */
-struct lval *_builtin_var(struct lenv *env, struct lval *args, char *funcname);
 /* Binds a variable locally */
 struct lval *builtin_let(struct lenv *env, struct lval *args);
 /* Binds a variable globally */

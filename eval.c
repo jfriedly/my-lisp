@@ -75,56 +75,79 @@ struct lval *builtin_lambda(struct lenv *env, struct lval *args)
 	return lval_lambda(formals, body);
 }
 
-struct lval *_convert_to_bool(struct lval *v)
+/* Utility function to turn other types of lvals into booleans */
+bool _convert_to_bool(struct lval *v)
 {
-	struct lval *x = lval_bool(false);
-
 	switch (v->type) {
 	case LVAL_LONG:
-		if (v->val.num_long)
-			x->val.b = true;
-		else
-			x->val.b = false;
-		break;
+		if (!v->val.num_long)
+			return false;
 	case LVAL_DOUBLE:
-		if (v->val.num_double)
-			x->val.b = true;
-		else
-			x->val.b = false;
-		break;
+		if (!v->val.num_double)
+			return false;
 	case LVAL_ERR:
-		x->val.b = true;
 		break;
 	case LVAL_SYM:
-		if (v->val.sym)
-			x->val.b = true;
-		else
-			x->val.b = false;
-		break;
+		if (!v->val.sym)
+			return false;
 	case LVAL_SEXPR:
-		if (v->count != 0)
-			x->val.b = true;
-		else
-			x->val.b = false;
-		break;
+		if (v->count == 0)
+			return false;
 	case LVAL_FUNC:
-		x->val.b = true;
 		break;
 	case LVAL_BOOL:
-		x->val.b = v->val.b;
-		break;
+		if (!v->val.b)
+			return false;
 	}
 
-	lval_del(v);
-	return x;
+	return true;
 }
 
 struct lval *builtin_not(struct lenv *env, struct lval *args)
 {
 	LASSERT_ARGC(args, 1, "not");
-	struct lval *arg1 = _convert_to_bool(lval_take(args, 0));
-	arg1->val.b = !arg1->val.b;
-	return arg1;
+	struct lval *arg1 = lval_take(args, 0);
+	struct lval *bool1 = lval_bool(!_convert_to_bool(arg1));
+	lval_del(arg1);
+	return bool1;
+}
+
+struct lval *builtin_or(struct lenv *env, struct lval *args)
+{
+	if (args->count == 0)
+		return lval_bool(false);
+
+	/* Iterate over all but the last argument so that we can return it */
+	while (args->count - 1) {
+		struct lval *argi = lval_pop(args, 0);
+		if (_convert_to_bool(argi)) {
+			lval_del(args);
+			return argi;
+		}
+		lval_del(argi);
+	}
+
+	struct lval *last_arg = lval_take(args, 0);
+	return last_arg;
+}
+
+struct lval *builtin_and(struct lenv *env, struct lval *args)
+{
+	if (args->count == 0)
+		return lval_bool(true);
+
+	/* Iterate over all but the last argument so that we can return it */
+	while (args->count - 1) {
+		struct lval *argi = lval_pop(args, 0);
+		if (!_convert_to_bool(argi)) {
+			lval_del(args);
+			return argi;
+		}
+		lval_del(argi);
+	}
+
+	struct lval *last_arg = lval_take(args, 0);
+	return last_arg;
 }
 
 struct lval *builtin_join(struct lenv *env, struct lval *args)
@@ -150,6 +173,7 @@ struct lval *builtin_length(struct lenv *env, struct lval *args)
 	return lval_long(arg1->count);
 }
 
+/* Common code used by both builtin_let and builtin_set */
 struct lval *_builtin_var(struct lenv *env, struct lval *args, char *funcname)
 {
 	LASSERT_ARGC(args, 2, funcname);
