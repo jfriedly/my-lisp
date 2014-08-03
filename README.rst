@@ -1,5 +1,5 @@
 Joel's Lisp
------------
+===========
 
 This repository is a C implementation of a Lisp, built by following the tutorial at `buildyourownlisp.com`_.
 
@@ -26,15 +26,96 @@ Create a build directory, then compile with the commands below:
     git checkout chapter-9;  cc -Wall -std=c99 mylisp.c mpc.c eval.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-10; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-11; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
+    git checkout chapter-12; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
 
 
-Implementation Details
+Implementation details
 ----------------------
 
 An ``lval`` represents a Lisp value and it is a struct containing a type, the value itself (which can be referenced based on the type), a "cell" of other child Lisp values, and a count of the number of children.
 Supported types are integers (longs), floats (doubles), symbols, functions, S-expressions, and errors.
 Despite an ``lval`` having one discrete type, all functions can be thought of as symbols.
 However, not all symbols are functions; symbols are variables that may be bound to any expression.
+
+
+Using defun
+-----------
+
+The ``defun`` function is not a special form in my lisp.
+It can be created with:
+
+.. code:: lisp
+
+    (set (quote defun) (lambda (quote (args body)) (quote (set (car args) (lambda (cdr args) body)))))
+
+And then you can use it like so:
+
+.. code:: lisp
+
+    my-lisp> (defun (quote (add x y)) (quote (+ x y)))
+    ()
+    my-lisp> (add 1 42)
+    43
+
+
+Partial application
+-------------------
+
+A function that takes *n* arguments can be turned into a function that takes *n - k* arguments by calling it with *k* arguments:
+
+.. code:: lisp
+
+    my-lisp> (set (quote add) (lambda (quote (foo bar)) (quote (+ foo bar))))
+    ()
+    my-lisp> (add 4)
+    (LAMBDA (bar) (+ foo bar))
+
+
+Currying and Uncurrying
+-----------------------
+
+Currying
+''''''''
+A function that takes a variable number of arguments can be called with a list of arguments by using prepending the list with the function name and calling ``eval`` on it:
+
+.. code:: lisp
+
+    my-lisp> (set (quote args) (list 5 6 7))
+    ()
+    my-lisp> (eval (join (list +) args))
+    18
+
+For convenience, we can define a function to unpack arguments from a list this way:
+
+.. code:: lisp
+
+    my-lisp> (defun (quote (unpack f xs)) (quote (eval (join (list f) xs))))
+    ()
+    my-lisp> (set (quote curry) unpack)
+    ()
+    my-lisp> (unpack + (list 5 6 7))
+    18
+
+
+Uncurrying
+''''''''''
+A function that takes a list of arguments can be called with a variable number of arguments by taking advantage of the ``&`` syntax that automatically packs up extra arguments into a list:
+
+.. code:: lisp
+
+    my-lisp> ((lambda (quote (& xs)) (quote (car xs))) 5 6 7)
+    5
+
+For convenience, we can define a function to pack arguments into a list this way:
+
+.. code:: lisp
+
+    my-lisp> (defun (quote (pack f & xs)) (quote (f xs)))
+    ()
+    my-lisp> (set (quote uncurry) pack)
+    ()
+    my-lisp> (pack car 5 6 7)
+    5
 
 
 TODO
@@ -60,7 +141,9 @@ TODO
 
 * Implement support for macros
 
-    * Implement the single-character quote macro
+* Implement the single-character quote macro
+
+* Grep for "TODO" to find more things to do
 
 
 

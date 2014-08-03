@@ -60,9 +60,11 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "cdr", builtin_cdr);
 	lenv_add_builtin(env, "list", builtin_list);
 	lenv_add_builtin(env, "eval", builtin_eval);
+	lenv_add_builtin(env, "lambda", builtin_lambda);
 	lenv_add_builtin(env, "join", builtin_join);
 	lenv_add_builtin(env, "length", builtin_length);
 	lenv_add_builtin(env, "set", builtin_set);
+	lenv_add_builtin(env, "let", builtin_let);
 	lenv_add_builtin(env, "env", builtin_env);
 	lenv_add_builtin(env, "exit", builtin_exit);
 	lenv_add_builtin(env, "max", builtin_max);
@@ -91,7 +93,7 @@ int main(int argc, char **argv)
 	mpca_lang(MPCA_LANG_DEFAULT,
 		"							\
 		number   : /-?[0-9.]+/ ;				\
-		symbol   : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!%^]+/;		\
+		symbol   : /[a-zA-Z0-9_+\\-*\\/\\\\=<>!%^&]+/;		\
 		expr     : <number> | <symbol> | <sexpr> ;		\
 		sexpr    : '(' <expr>* ')' ;				\
 		mylisp   : /^/ <sexpr> /$/ ;",
@@ -104,7 +106,6 @@ int main(int argc, char **argv)
 	rl_initialize();
 	errno = 0;
 
-	/* singleton */
 	struct lenv *env = lenv_new();
 	lenv_add_builtins(env);
 

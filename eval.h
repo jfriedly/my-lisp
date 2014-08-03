@@ -49,6 +49,8 @@ struct lval *builtin_cdr(struct lenv *env, struct lval *args);
 struct lval *builtin_list(struct lenv *env, struct lval *args);
 /* Evaluates an S-expression */
 struct lval *builtin_eval(struct lenv *env, struct lval *args);
+/* Create a new user-defined function */
+struct lval *builtin_lambda(struct lenv *env, struct lval *args);
 /*
  * Use join to join many S-expressions together.  Ex:
  *
@@ -58,7 +60,11 @@ struct lval *builtin_eval(struct lenv *env, struct lval *args);
 struct lval *builtin_join(struct lenv *env, struct lval *args);
 /* Returns the length of an S-expression */
 struct lval *builtin_length(struct lenv *env, struct lval *args);
-/* Sets a variable */
+/* Common code used by both builtin_let and builtin_set */
+struct lval *_builtin_var(struct lenv *env, struct lval *args, char *funcname);
+/* Binds a variable locally */
+struct lval *builtin_let(struct lenv *env, struct lval *args);
+/* Binds a variable globally */
 struct lval *builtin_set(struct lenv *env, struct lval *args);
 /* Prints all variables in the environment */
 struct lval *builtin_env(struct lenv *env, struct lval *args);

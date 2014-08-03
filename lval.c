@@ -31,6 +31,7 @@ char *ltype(int type)
 struct lenv *lenv_new(void)
 {
 	struct lenv *env = malloc(sizeof(struct lenv));
+	env->parent = NULL;
 	env->count = 0;
 	env->syms = NULL;
 	env->vals = NULL;
@@ -92,11 +93,27 @@ struct lval *lval_sexpr(void)
 	return v;
 }
 
-struct lval *lval_func(struct lval *(*func)(struct lenv *env, struct lval *v))
+struct lval *lval_func(struct lval *(*builtin)(struct lenv *env, struct lval *v))
 {
 	struct lval *v = malloc(sizeof(struct lval));
 	v->type = LVAL_FUNC;
-	v->val.func = func;
+	v->val.func.builtin = builtin;
+	return v;
+}
+
+/*
+ * Could we get away without keeping a copy of the formals if we just
+ * immediately put them in the env here?
+ */
+struct lval *lval_lambda(struct lval* formals, struct lval* body)
+{
+	struct lval *v = malloc(sizeof(struct lval));
+	v->type = LVAL_FUNC;
+	/* For user defined functions, set builtin to NULL */
+	v->val.func.builtin = NULL;
+	v->val.func.env = lenv_new();
+	v->val.func.formals = formals;
+	v->val.func.body = body;
 	return v;
 }
 
@@ -184,7 +201,14 @@ struct lval *lval_copy(struct lval *v)
 
 	/* Copy functions directly */
 	case LVAL_FUNC:
-		x->val.func = v->val.func;
+		if (v->val.func.builtin) {
+			x->val.func.builtin = v->val.func.builtin;
+		} else {
+			x->val.func.builtin = NULL;
+			x->val.func.env = lenv_copy(v->val.func.env);
+			x->val.func.formals = lval_copy(v->val.func.formals);
+			x->val.func.body = lval_copy(v->val.func.body);
+		}
 		break;
 	default:
 		lval_del(x);
@@ -198,17 +222,21 @@ struct lval *lval_copy(struct lval *v)
 
 struct lval *lenv_get(struct lenv *env, struct lval *k)
 {
-	/* Iterate over every element in the environnment to find the key */
+	/* Iterate over every element in the environment to find the key */
 	for (int i = 0; i < env->count; i++) {
 		if (strcmp(env->syms[i], k->val.sym) == 0)
 			return lval_copy(env->vals[i]);
 	}
 
-	/* If the key isn't found, return an error */
-	return lval_err("Unbound symbol:  '%s'", k->val.sym);
+	/* If the key isn't found, check the parent or return an error */
+	if (env->parent) {
+		return lenv_get(env->parent, k);
+	} else {
+		return lval_err("Unbound symbol:  '%s'", k->val.sym);
+	}
 }
 
-void lenv_set(struct lenv *env, struct lval *k, struct lval *v)
+void lenv_let(struct lenv *env, struct lval *k, struct lval *v)
 {
 	/*
 	 * Iterate over every element in the environment in case the key is
@@ -233,12 +261,36 @@ void lenv_set(struct lenv *env, struct lval *k, struct lval *v)
 	strcpy(env->syms[env->count-1], k->val.sym);
 }
 
+void lenv_set(struct lenv *env, struct lval *k, struct lval *v)
+{
+	/* Iterate til we reach the global environment */
+	while (env->parent)
+		env = env->parent;
+	/* Set the key to the value in the global environment */
+	lenv_let(env, k, v);
+}
+
+struct lenv *lenv_copy(struct lenv *original)
+{
+	struct lenv *copy = malloc(sizeof(struct lenv));
+	copy->parent = original->parent;
+	copy->count = original->count;
+	copy->syms = malloc(sizeof(char*) * copy->count);
+	copy->vals = malloc(sizeof(struct lval*) * copy->count);
+	for (int i = 0; i < original->count; i++) {
+		copy->syms[i] = malloc(strlen(original->syms[i]) + 1);
+		strcpy(copy->syms[i], original->syms[i]);
+		copy->vals[i] = lval_copy(original->vals[i]);
+	}
+	return copy;
+}
+
 void lenv_add_builtin(struct lenv *env,
 			char *name,
-			struct lval *(*func)(struct lenv *env, struct lval *v))
+			struct lval *(*builtin)(struct lenv *env, struct lval *v))
 {
 	struct lval *k = lval_sym(name);
-	struct lval *v = lval_func(func);
+	struct lval *v = lval_func(builtin);
 	lenv_set(env, k, v);
 	lval_del(k);
 	lval_del(v);
@@ -337,8 +389,12 @@ void lval_del(struct lval *v)
 
 	/* We don't have to do anything special for functions */
 	case LVAL_FUNC:
+		if (!v->val.func.builtin) {
+			lenv_del(v->val.func.env);
+			lval_del(v->val.func.formals);
+			lval_del(v->val.func.body);
+		}
 		break;
-
 	default:
 		/* There's a bug if this ever doesn't print Unknown. */
 		log_err("Attempted to delete an unrecognized lval type: %s.",
@@ -386,7 +442,16 @@ void lval_print(FILE *stream, struct lval *v)
 		 * TODO(jfriedly):  Figure out a way to make this print the
 		 * name of the function.
 		 */
-		fprintf(stream, "<function at %p>", v->val.func);
+		if (v->val.func.builtin) {
+			fprintf(stream, "<builtin function at %p>",
+				v->val.func.builtin);
+		} else {
+			fprintf(stream, "(lambda ");
+			lval_print(stream, v->val.func.formals);
+			fprintf(stream, " ");
+			lval_print(stream, v->val.func.body);
+			fprintf(stream, ")");
+		}
 		break;
 	default:
 		/* There's a bug if this ever doesn't print Unknown. */
