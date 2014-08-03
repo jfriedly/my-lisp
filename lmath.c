@@ -3,6 +3,7 @@
 #include "dbg.h"
 
 #include "lval.h"
+#include "eval.h"
 
 struct lval *lval_add(struct lval *x, struct lval *y)
 {
@@ -118,6 +119,8 @@ struct lval *lval_min(struct lval *x, struct lval *y)
 
 struct lval *builtin_op(struct lenv *env, char *op, struct lval *numbers)
 {
+	LASSERT(numbers, (numbers->count > 1), "Function %s requires at least "
+		"one argument", op);
 	/* Ensure all arguments are numbers */
 	for (int i = 0; i < numbers->count; i++) {
 		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {

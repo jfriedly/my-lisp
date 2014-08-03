@@ -221,6 +221,9 @@ struct lval *lval_eval_sexpr(struct lenv *env, struct lval *sexpr)
 		debug("Matched quote");
 		/* Delete the quote symbol */
 		lval_del(lval_pop(sexpr, 0));
+		if (sexpr->count != 1)
+			return lval_err("Special form quote must be passed "
+					"exactly one argument");
 		/* Pop out the arg that was given to quote */
 		struct lval *quoted_expr = lval_pop(sexpr, 0);
 		lval_del(sexpr);
