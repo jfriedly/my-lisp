@@ -121,6 +121,19 @@ For convenience, we can define a function to pack arguments into a list this way
     5
 
 
+Booleans
+--------
+
+Traditional Lisp has the empty list, nil, as only falsey value, with no outside concept of "false".
+This means that both empty strings and the number zero are truthy values.
+On top of that, there is a boolean value for "true", just not one for "false".
+
+I don't like this style though, so I've ported over some more familiar semantics.
+The number zero (as an integer or a float) is falsey, as well as empty strings and empty lists.
+In addition, I've added a boolean value for "false" that complements the built in value for "true".
+Both of these values are built in and can be accessed directly with ``T`` and ``F``.
+
+
 TODO
 ----
 
