@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <string.h>
 
 #include "dbg.h"
@@ -72,6 +73,58 @@ struct lval *builtin_lambda(struct lenv *env, struct lval *args)
 	struct lval *body = lval_pop(args, 0);
 	lval_del(args);
 	return lval_lambda(formals, body);
+}
+
+struct lval *_convert_to_bool(struct lval *v)
+{
+	struct lval *x = lval_bool(false);
+
+	switch (v->type) {
+	case LVAL_LONG:
+		if (v->val.num_long)
+			x->val.b = true;
+		else
+			x->val.b = false;
+		break;
+	case LVAL_DOUBLE:
+		if (v->val.num_double)
+			x->val.b = true;
+		else
+			x->val.b = false;
+		break;
+	case LVAL_ERR:
+		x->val.b = true;
+		break;
+	case LVAL_SYM:
+		if (v->val.sym)
+			x->val.b = true;
+		else
+			x->val.b = false;
+		break;
+	case LVAL_SEXPR:
+		if (v->count != 0)
+			x->val.b = true;
+		else
+			x->val.b = false;
+		break;
+	case LVAL_FUNC:
+		x->val.b = true;
+		break;
+	case LVAL_BOOL:
+		x->val.b = v->val.b;
+		break;
+	}
+
+	lval_del(v);
+	return x;
+}
+
+struct lval *builtin_not(struct lenv *env, struct lval *args)
+{
+	LASSERT_ARGC(args, 1, "not");
+	struct lval *arg1 = _convert_to_bool(lval_take(args, 0));
+	arg1->val.b = !arg1->val.b;
+	return arg1;
 }
 
 struct lval *builtin_join(struct lenv *env, struct lval *args)

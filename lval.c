@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -21,6 +22,8 @@ char *ltype(int type)
 		return "S-Expression";
 	case LVAL_FUNC:
 		return "Function";
+	case LVAL_BOOL:
+		return "Boolean";
 	default: {
 		char *err = malloc(32);
 		sprintf(err, "Unknown (%d)", type);
@@ -114,6 +117,14 @@ struct lval *lval_lambda(struct lval* formals, struct lval* body)
 	v->val.func.env = lenv_new();
 	v->val.func.formals = formals;
 	v->val.func.body = body;
+	return v;
+}
+
+struct lval *lval_bool(bool b)
+{
+	struct lval *v = malloc(sizeof(struct lval));
+	v->type = LVAL_BOOL;
+	v->val.b = b;
 	return v;
 }
 
@@ -395,6 +406,8 @@ void lval_del(struct lval *v)
 			lval_del(v->val.func.body);
 		}
 		break;
+	case LVAL_BOOL:
+		break;
 	default:
 		/* There's a bug if this ever doesn't print Unknown. */
 		log_err("Attempted to delete an unrecognized lval type: %s.",
@@ -452,6 +465,12 @@ void lval_print(FILE *stream, struct lval *v)
 			lval_print(stream, v->val.func.body);
 			fprintf(stream, ")");
 		}
+		break;
+	case LVAL_BOOL:
+		if (v->val.b)
+			fprintf(stream, "T");
+		else
+			fprintf(stream, "F");
 		break;
 	default:
 		/* There's a bug if this ever doesn't print Unknown. */

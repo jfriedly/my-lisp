@@ -51,6 +51,10 @@ struct lval *builtin_list(struct lenv *env, struct lval *args);
 struct lval *builtin_eval(struct lenv *env, struct lval *args);
 /* Create a new user-defined function */
 struct lval *builtin_lambda(struct lenv *env, struct lval *args);
+/* Utility function to turn other types of lvals into booleans */
+struct lval *_convert_to_bool(struct lval *v);
+/* Negate a boolean */
+struct lval *builtin_not(struct lenv *env, struct lval *args);
 /*
  * Use join to join many S-expressions together.  Ex:
  *

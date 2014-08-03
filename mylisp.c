@@ -61,6 +61,7 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "list", builtin_list);
 	lenv_add_builtin(env, "eval", builtin_eval);
 	lenv_add_builtin(env, "lambda", builtin_lambda);
+	lenv_add_builtin(env, "not", builtin_not);
 	lenv_add_builtin(env, "join", builtin_join);
 	lenv_add_builtin(env, "length", builtin_length);
 	lenv_add_builtin(env, "set", builtin_set);

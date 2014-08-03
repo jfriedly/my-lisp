@@ -1,6 +1,8 @@
 #ifndef lval_h
 #define lval_h
 
+#include <stdbool.h>
+
 #include "mpc.h"
 
 /* Forward declare the Lisp environment and lvals */
@@ -36,6 +38,7 @@ struct lval {
                 char *err;
                 char *sym;
                 struct function func;
+                bool b;
         } val ;
         int count;
         struct lval **cell;
@@ -49,6 +52,7 @@ enum {
         LVAL_SYM,
         LVAL_SEXPR,
         LVAL_FUNC,
+        LVAL_BOOL,
 };
 
 char *ltype(int type);
@@ -72,6 +76,7 @@ struct lval *lval_sym(char *s);
 struct lval *lval_sexpr(void);
 struct lval *lval_func(struct lval *(*builtin)(struct lenv *env, struct lval *v));
 struct lval *lval_lambda(struct lval* formals, struct lval* body);
+struct lval *lval_bool(bool b);
 
 /* lenv and lval lval destructors */
 void lenv_del(struct lenv *env);

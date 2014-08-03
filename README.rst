@@ -37,6 +37,9 @@ Supported types are integers (longs), floats (doubles), symbols, functions, S-ex
 Despite an ``lval`` having one discrete type, all functions can be thought of as symbols.
 However, not all symbols are functions; symbols are variables that may be bound to any expression.
 
+If you're adding a new built in function, be sure to avoid calling ``lval_take(args, foo)`` and also ``lval_del(args)``.
+Since ``lval_take`` frees its argument, calling ``lval_del`` on ``args`` later will result in heap memory corruption.
+
 
 Using defun
 -----------
