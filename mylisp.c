@@ -64,6 +64,7 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "not", builtin_not);
 	lenv_add_builtin(env, "or", builtin_or);
 	lenv_add_builtin(env, "and", builtin_and);
+	lenv_add_builtin(env, "if", builtin_if);
 	lenv_add_builtin(env, "join", builtin_join);
 	lenv_add_builtin(env, "length", builtin_length);
 	lenv_add_builtin(env, "set", builtin_set);

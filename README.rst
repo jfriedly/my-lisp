@@ -27,6 +27,7 @@ Create a build directory, then compile with the commands below:
     git checkout chapter-10; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-11; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-12; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
+    git checkout chapter-13; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
 
 
 Implementation details

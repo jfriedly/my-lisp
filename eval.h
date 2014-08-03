@@ -57,6 +57,8 @@ struct lval *builtin_not(struct lenv *env, struct lval *args);
 struct lval *builtin_or(struct lenv *env, struct lval *args);
 /* Return the AND of several lvals */
 struct lval *builtin_and(struct lenv *env, struct lval *args);
+/* If statement with else block */
+struct lval *builtin_if(struct lenv *env, struct lval *args);
 /*
  * Use join to join many S-expressions together.  Ex:
  *

@@ -150,6 +150,20 @@ struct lval *builtin_and(struct lenv *env, struct lval *args)
 	return last_arg;
 }
 
+struct lval *builtin_if(struct lenv *env, struct lval *args)
+{
+	LASSERT_ARGC(args, 3, "if");
+	struct lval *cond = lval_pop(args, 0);
+	struct lval *then_branch = lval_pop(args, 0);
+	struct lval *else_branch = lval_pop(args, 0);
+	lval_del(args);
+
+	if (_convert_to_bool(cond))
+		return lval_eval(env, then_branch);
+	else
+		return lval_eval(env, else_branch);
+}
+
 struct lval *builtin_join(struct lenv *env, struct lval *args)
 {
 	for (int i = 0; i < args->count; i++) {
