@@ -115,5 +115,10 @@ struct lval *builtin_mod(struct lenv *env, struct lval *numbers);
 struct lval *builtin_pow(struct lenv *env, struct lval *numbers);
 struct lval *builtin_max(struct lenv *env, struct lval *numbers);
 struct lval *builtin_min(struct lenv *env, struct lval *numbers);
+struct lval *builtin_eq(struct lenv *env, struct lval *numbers);
+struct lval *builtin_geq(struct lenv *env, struct lval *numbers);
+struct lval *builtin_leq(struct lenv *env, struct lval *numbers);
+struct lval *builtin_g(struct lenv *env, struct lval *numbers);
+struct lval *builtin_l(struct lenv *env, struct lval *numbers);
 
 #endif

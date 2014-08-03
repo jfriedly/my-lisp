@@ -78,6 +78,11 @@ void lenv_add_builtins(struct lenv *env)
 	lenv_add_builtin(env, "/", builtin_div);
 	lenv_add_builtin(env, "%", builtin_mod);
 	lenv_add_builtin(env, "^", builtin_pow);
+	lenv_add_builtin(env, "=", builtin_eq);
+	lenv_add_builtin(env, ">=", builtin_geq);
+	lenv_add_builtin(env, "<=", builtin_leq);
+	lenv_add_builtin(env, ">", builtin_g);
+	lenv_add_builtin(env, "<", builtin_l);
 
 	lenv_set(env, lval_sym("T"), lval_bool(true));
 	lenv_set(env, lval_sym("F"), lval_bool(false));

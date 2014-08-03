@@ -1,4 +1,5 @@
 #include <math.h>
+#include <stdbool.h>
 
 #include "dbg.h"
 
@@ -117,20 +118,100 @@ struct lval *lval_min(struct lval *x, struct lval *y)
 		ltype(y->type));
 }
 
+struct lval *lval_eq(struct lval *x, struct lval *y)
+{
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_long == y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_long == y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_double == y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_double == y->val.num_double);
+	return lval_err("Invalid number types: %s and %s.", ltype(x->type),
+		ltype(y->type));
+}
+
+struct lval *lval_geq(struct lval *x, struct lval *y)
+{
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_long >= y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_long >= y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_double >= y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_double >= y->val.num_double);
+	return lval_err("Invalid number types: %s and %s.", ltype(x->type),
+		ltype(y->type));
+}
+
+struct lval *lval_leq(struct lval *x, struct lval *y)
+{
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_long <= y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_long <= y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_double <= y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_double <= y->val.num_double);
+	return lval_err("Invalid number types: %s and %s.", ltype(x->type),
+		ltype(y->type));
+}
+
+/* greater than */
+struct lval *lval_g(struct lval *x, struct lval *y)
+{
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_long > y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_long > y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_double > y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_double > y->val.num_double);
+	return lval_err("Invalid number types: %s and %s.", ltype(x->type),
+		ltype(y->type));
+}
+
+/* less than */
+struct lval *lval_l(struct lval *x, struct lval *y)
+{
+	if (x->type == LVAL_LONG && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_long < y->val.num_long);
+	if (x->type == LVAL_LONG && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_long < y->val.num_double);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_LONG)
+		return lval_bool(x->val.num_double < y->val.num_long);
+	if (x->type == LVAL_DOUBLE && y->type == LVAL_DOUBLE)
+		return lval_bool(x->val.num_double < y->val.num_double);
+	return lval_err("Invalid number types: %s and %s.", ltype(x->type),
+		ltype(y->type));
+}
+
+/* Ensures all arguments are numbers */
+struct lval *_ensure_numbers(char * op, struct lval *numbers)
+{
+	for (int i = 0; i < numbers->count; i++) {
+		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
+			lval_del(numbers);
+			return lval_err("Attempted to evaluate operator %s "
+					"on type %s", op,
+					ltype(numbers->cell[i]->type));
+		}
+	}
+	return NULL;
+}
+
+
 struct lval *builtin_op(struct lenv *env, char *op, struct lval *numbers)
 {
 	LASSERT(numbers, (numbers->count > 1), "Function %s requires at least "
 		"one argument", op);
-	/* Ensure all arguments are numbers */
-	for (int i = 0; i < numbers->count; i++) {
-		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
-			struct lval *err = lval_err("Attempted to evaluate "
-				"operator %s on type %s.", op,
-				ltype(numbers->cell[i]->type));
-			lval_del(numbers);
-			return err;
-		}
-	}
+	struct lval *type_err = _ensure_numbers(op, numbers);
+	if (type_err)
+		return type_err;
 
 	/*
 	 * Pop the first number; it becomes our accumulator.  There will
@@ -138,6 +219,7 @@ struct lval *builtin_op(struct lenv *env, char *op, struct lval *numbers)
 	 * for us.
 	 *
 	 * If there is only one number, we'll return that number unchanged.
+	 * That is, the default argument is always an identity operation.
 	 */
 	struct lval *acc = lval_pop(numbers, 0);
 	/* While there are still elements remaining */
@@ -170,6 +252,40 @@ struct lval *builtin_op(struct lenv *env, char *op, struct lval *numbers)
 
 	lval_del(numbers);
 	return acc;
+}
+
+struct lval *builtin_comp(struct lenv *env, char *op, struct lval *numbers)
+{
+	debug("Called builtin_comp");
+	LASSERT_ARGC(numbers, 2, op);
+	debug("Numbers contains 2 arguments");
+	struct lval *type_err = _ensure_numbers(op, numbers);
+	if (type_err)
+		return type_err;
+
+	debug ("Getting x");
+	struct lval *x = lval_pop(numbers, 0);
+	debug("Got x");
+	struct lval *y = lval_pop(numbers, 0);
+	debug("Got x and y");
+	if (strcmp(op, "=") == 0)
+		return lval_eq(x, y);
+	else if (strcmp(op, ">=") == 0)
+		return lval_geq(x, y);
+	else if (strcmp(op, "<=") == 0)
+		return lval_leq(x, y);
+	else if (strcmp(op, ">") == 0)
+		return lval_g(x, y);
+	else if (strcmp(op, "<") == 0)
+		return lval_l(x, y);
+	else
+		goto cleanup;
+
+cleanup:
+	lval_del(x);
+	lval_del(y);
+	lval_del(numbers);
+	return lval_err("Unrecognized operator: '%s'", op);
 }
 
 struct lval *builtin_add(struct lenv *env, struct lval *numbers)
@@ -210,4 +326,29 @@ struct lval *builtin_max(struct lenv *env, struct lval *numbers)
 struct lval *builtin_min(struct lenv *env, struct lval *numbers)
 {
 	return builtin_op(env, "min", numbers);
+}
+
+struct lval *builtin_eq(struct lenv *env, struct lval *numbers)
+{
+	return builtin_comp(env, "=", numbers);
+}
+
+struct lval *builtin_geq(struct lenv *env, struct lval *numbers)
+{
+	return builtin_comp(env, ">=", numbers);
+}
+
+struct lval *builtin_leq(struct lenv *env, struct lval *numbers)
+{
+	return builtin_comp(env, "<=", numbers);
+}
+
+struct lval *builtin_g(struct lenv *env, struct lval *numbers)
+{
+	return builtin_comp(env, ">", numbers);
+}
+
+struct lval *builtin_l(struct lenv *env, struct lval *numbers)
+{
+	return builtin_comp(env, "<", numbers);
 }
