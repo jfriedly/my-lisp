@@ -50,7 +50,12 @@ It can be created with:
 
 .. code:: lisp
 
-    (set (quote defun) (lambda (quote (args body)) (quote (set (car args) (lambda (cdr args) body)))))
+    mylisp> (set (quote defun) (lambda (quote (args body)) (quote (set (car args) (lambda (cdr args) body)))))
+    ()
+
+.. This doesn't work:
+..    (defun (quote (add-squared x & xs)) (quote (if (= (length xs) 0) 0 (+ (^ x 2) (add-squared xs)))))
+
 
 And then you can use it like so:
 
@@ -73,6 +78,21 @@ A function that takes *n* arguments can be turned into a function that takes *n 
     ()
     my-lisp> (add 4)
     (LAMBDA (bar) (+ foo bar))
+
+
+Recursion
+---------
+
+Don't use the ampersand syntax described below for recursive functions.
+Recursive functions should always operate on lists of arguments.
+Here's an example of a correct recursive function:
+
+.. code:: lisp
+
+    my-lisp> (defun (quote (add xs)) (quote (if (= (length xs) 0) 0 (quote (+ (car xs) (add (cdr xs)))))))
+    ()
+    my-lisp> (add (list 1 2 3 4))
+    10
 
 
 Currying and Uncurrying
@@ -159,6 +179,8 @@ TODO
 * Implement support for macros
 
 * Implement the single-character quote macro
+
+* Make the ampersand syntax check for no more than one symbol after the ampersand at function definition time, not at function calling time
 
 * Grep for "TODO" to find more things to do
 

@@ -195,7 +195,6 @@ struct lval *_ensure_numbers(char * op, struct lval *numbers)
 {
 	for (int i = 0; i < numbers->count; i++) {
 		if ((numbers->cell[i]->type != LVAL_LONG) && (numbers->cell[i]->type != LVAL_DOUBLE)) {
-			lval_del(numbers);
 			return lval_err("Attempted to evaluate operator %s "
 					"on type %s", op,
 					ltype(numbers->cell[i]->type));
@@ -207,11 +206,13 @@ struct lval *_ensure_numbers(char * op, struct lval *numbers)
 
 struct lval *builtin_op(struct lenv *env, char *op, struct lval *numbers)
 {
-	LASSERT(numbers, (numbers->count > 1), "Function %s requires at least "
+	LASSERT(numbers, (numbers->count > 0), "Function %s requires at least "
 		"one argument", op);
 	struct lval *type_err = _ensure_numbers(op, numbers);
-	if (type_err)
+	if (type_err) {
+		lval_del(numbers);
 		return type_err;
+	}
 
 	/*
 	 * Pop the first number; it becomes our accumulator.  There will

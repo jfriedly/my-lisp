@@ -82,24 +82,30 @@ bool _convert_to_bool(struct lval *v)
 	case LVAL_LONG:
 		if (!v->val.num_long)
 			return false;
+		break;
 	case LVAL_DOUBLE:
 		if (!v->val.num_double)
 			return false;
+		break;
 	case LVAL_ERR:
 		break;
 	case LVAL_SYM:
 		if (!v->val.sym)
 			return false;
+		break;
 	case LVAL_SEXPR:
 		if (v->count == 0)
 			return false;
+		break;
 	case LVAL_FUNC:
 		break;
 	case LVAL_BOOL:
 		if (!v->val.b)
 			return false;
+		break;
 	}
 
+	debug("_convert_to_bool returning true");
 	return true;
 }
 
@@ -184,6 +190,7 @@ struct lval *builtin_length(struct lenv *env, struct lval *args)
 {
 	/* Otherwise take the first argument */
 	struct lval *arg1 = lval_take(args, 0);
+	debug("builtin_length returning an lval_long of %d", arg1->count);
 	return lval_long(arg1->count);
 }
 
@@ -246,7 +253,13 @@ struct lval *lval_call(struct lenv *env, struct lval *f, struct lval *args)
 		struct lval *sym = lval_pop(f->val.func.formals, 0);
 		if (strcmp(sym->val.sym, "&") == 0) {
 			if (f->val.func.formals->count != 1) {
+				lval_del(sym);
 				lval_del(args);
+				/*
+				 * TODO(jfriedly):  This should be raised on
+				 * function creation, not when the function is
+				 * called.
+				 */
 				return lval_err("Function format invalid.  "
 					"Symbol '&' must be followed by "
 					"exactly one symbol.");
@@ -273,6 +286,10 @@ struct lval *lval_call(struct lenv *env, struct lval *f, struct lval *args)
 	if (f->val.func.formals->count > 0 &&
 		strcmp(f->val.func.formals->cell[0]->val.sym, "&") == 0) {
 		if (f->val.func.formals->count != 2) {
+			/*
+			 * TODO(jfriedly):  This should be raised on function
+			 * creation, not when the function is called.
+			 */
 			return lval_err("Function format invalid.  Symbol '&'"
 				" must be followed by exactly one symbol.");
 		}

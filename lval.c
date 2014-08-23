@@ -352,10 +352,6 @@ struct lval *lval_read(mpc_ast_t *ast)
 			continue;
 		if (strcmp(ast->children[i]->contents, ")") == 0)
 			continue;
-		if (strcmp(ast->children[i]->contents, "{") == 0)
-			continue;
-		if (strcmp(ast->children[i]->contents, "}") == 0)
-			continue;
 		if (strcmp(ast->children[i]->tag, "regex") == 0)
 			continue;
 		sexpr = lval_append(sexpr, lval_read(ast->children[i]));
