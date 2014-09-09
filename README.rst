@@ -1,7 +1,9 @@
 Joel's Lisp
 ===========
 
-This repository is a C implementation of a Lisp, built by following the tutorial at `buildyourownlisp.com`_.
+This repository is a C implementation of a Lisp, built by loosely following the tutorial at `buildyourownlisp.com`_.
+I wrote this as a learning exercise; it's slow and buggy and not intended for production anywhere, ever.
+It is, however, Turing complete, and I've learned a lot about how programming languages are designed and implemented while writing this.
 
 
 Dependencies
@@ -28,6 +30,8 @@ Create a build directory, then compile with the commands below:
     git checkout chapter-11; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-12; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
     git checkout chapter-13; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
+    # Version 1.0.0!  Turing complete!
+    git checkout 1.0.0; cc -Wall -std=c99 mylisp.c mpc.c eval.c lmath.c lval.c -lm -ledit -o build/mylisp
 
 
 Implementation details
