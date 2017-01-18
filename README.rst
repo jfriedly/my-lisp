@@ -174,17 +174,13 @@ TODO
 
 * Handle EOF
 
-* Support comparators (equals, less than, greater than, etc.)
-
-* Support conditional expressions
-
-* Support function definition
-
 * Implement support for macros
 
 * Implement the single-character quote macro
 
 * Make the ampersand syntax check for no more than one symbol after the ampersand at function definition time, not at function calling time
+
+* Comb through the source looking for things that can be marked as ``static``
 
 * Grep for "TODO" to find more things to do
 
